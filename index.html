@@ -214,6 +214,8 @@ const AYAR = {
 
 /* ================== URL / VERİ ================== */
 const url = new URLSearchParams(location.search);
+const KAYIT = url.has('kayit');
+if(KAYIT){ window.__SANAL = 0; performance.now = () => window.__SANAL; }
 const YONETIM = url.get('yonetim') === '1';
 const $ = id => document.getElementById(id);
 const bekle = () => new Promise(r => setTimeout(r, 0));
@@ -1082,43 +1084,56 @@ addEventListener('resize', boyut); boyut();
 /* ================== REEL ÇEKİM MODU (?reel=renk) ==================
    Arayüz gizlenir; kamera, renkler ve ekran yazıları seslendirmeyle aynı zamanlamada oynar (30 sn, döngü).
    Telefonda aç → ekran kaydını başlat → ekrana dokun. */
-const REEL_DURUM = { bas:0, adim:0, acik:false, isim:null };
-function reelYaz(b, alt='', vurgu=false){ const el = $('reelYazi'); el.innerHTML = b ? `<b class="${vurgu?'vurgu':''}">${b}</b>${alt ? `<small>${alt}</small>` : ''}` : ''; }
+const REEL_DURUM = { bas:0, adim:0, acik:false, isim:null, yazi:null, yaziT:0 };
+const reelSn = () => (performance.now() - REEL_DURUM.bas)/1000;
+function reelYaz(b, alt='', vurgu=false, d=null){
+  REEL_DURUM.yazi = b ? { b, alt, vurgu, d } : null; REEL_DURUM.yaziT = performance.now();
+  const el = $('reelYazi'); if(!el) return;
+  el.innerHTML = b ? `<b class="${vurgu?'vurgu':''}">${d ? `<span class="sw" style="${swatch(d)}"></span>` : ''}${esc(b)}</b>${alt ? `<small>${esc(alt)}</small>` : ''}` : '';
+}
 const aday = ad => ADAYLAR.find(a => trK(a.ad) === trK(ad)) || ADAYLAR[0];
-const sw = d => `<span class="sw" style="${swatch(d)}"></span>`;
 function reelKamera(ad, sure){
-  const Kk = kenar(4, 30), Kl = kenar(4, DIS(1)+2), Kb = kenar(2, 20);
+  const Kl = kenar(4, DIS(1)+2), Kb = kenar(2, 20);
   const P = {
     zemin:  [new THREE.Vector3(26, 235, 0), new THREE.Vector3(0, 0, 0)],
     yuksel: [new THREE.Vector3(60, 110, 175), new THREE.Vector3(0, 8, -6)],
     kus:    [KUS.pos.clone(), KUS.hedef.clone()],
     kose:   [new THREE.Vector3(-170, 70, 160), new THREE.Vector3(0, 14, 0)],
-    batı:   [new THREE.Vector3(Kb.mx - Kb.nx*150 + 60, 95, Kb.mz - Kb.nz*150 + 70), new THREE.Vector3(Kb.mx + 20, 10, Kb.mz)],
+    bati:   [new THREE.Vector3(Kb.mx - Kb.nx*150 + 60, 95, Kb.mz - Kb.nz*150 + 70), new THREE.Vector3(Kb.mx + 20, 10, Kb.mz)],
     loca:   [new THREE.Vector3(Kl.mx - Kl.nx*15, KORIDOR_Y + 4, Kl.mz - Kl.nz*15), new THREE.Vector3(Kl.mx, KORIDOR_Y + 1, Kl.mz)],
     locaYakin: (() => { const si = REEL_DURUM.si, n = NRM[4]; return [new THREE.Vector3(SX[si] - n[0]*9 + 2, SY[si] + 2.6, SZ[si] - n[1]*9), new THREE.Vector3(SX[si], SY[si] + 1.1, SZ[si])]; })(),
   }[ad];
   if(sure === 0){ cam.position.copy(P[0]); ctl.target.copy(P[1]); ucus = null; } else uc(P[0], P[1], sure);
 }
 const flas = (simdi, t0) => { const list = ADAYLAR.slice(0,4), i = Math.floor((simdi - t0)/230); return list[i % list.length]; };
-// [saniye, işlem]
-const REEL_PLAN = [
-  [0.0,  () => { reelKamera('zemin', 0); ctl.autoRotate = false; REEL_DURUM.flas = true; REEL_DURUM.flasT = performance.now(); reelYaz('100.000 KİŞİLİK STAT'); }],
-  [1.0,  () => { REEL_DURUM.flas = false; renkUygula(null); reelYaz('100.000 KİŞİLİK STAT', '…ve hâlâ rengi yok 😶'); reelKamera('yuksel', 2.4); }],
-  [3.0,  () => reelYaz('RENGİNİ <u>SEN</u> SEÇECEKSİN', '', true)],
-  [4.8,  () => { reelKamera('kus', 1.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.4; }],
-  [5.2,  () => { const d = aday('Sarı-Kırmızı'); renkUygula(d); reelYaz(sw(d) + d.ad.toLocaleUpperCase('tr-TR') + '?'); }],
-  [6.7,  () => { const d = aday('Sarı-Lacivert'); renkUygula(d); reelYaz(sw(d) + d.ad.toLocaleUpperCase('tr-TR') + '?'); }],
-  [8.2,  () => { const d = aday('Siyah-Beyaz'); renkUygula(d); reelYaz(sw(d) + d.ad.toLocaleUpperCase('tr-TR') + '?'); }],
-  [9.7,  () => { const d = aday('Bordo-Mavi'); renkUygula(d); reelYaz(sw(d) + d.ad.toLocaleUpperCase('tr-TR') + '?'); }],
-  [11.2, () => { renkUygula(null); ctl.autoRotate = false; reelKamera('kose', 2.6); reelYaz('HEPSİ YAKIŞIYOR', 'ama karar senin 🤝'); }],
-  [14.0, () => { reelKamera('batı', 3); reelYaz('YORUMA TAKIMINI YAZ ✍️', '', true); }],
-  [16.8, () => reelYaz('EN ÇOK YAZILAN KAZANIR', 'renkleri 100.000 koltuğa işlenir')],
-  [20.0, () => { reelKamera('loca', 1.8); reelYaz('İLK 1.000 KİŞİ', 'LOCADA OTURACAK 🥂', true); }],
-  [22.6, () => { reelKamera('locaYakin', 1.6); REEL_DURUM.isim.visible = true; reelYaz('ADIN KOLTUĞA YAZILIR'); }],
-  [25.0, () => { REEL_DURUM.isim.visible = false; reelKamera('kus', 2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1; reelYaz('TAKİP ET + TAKIMINI YAZ', '@' + AYAR.hesap); }],
-  [27.8, () => { REEL_DURUM.flas = true; REEL_DURUM.flasT = performance.now(); reelYaz('SENCE HANGİSİ KAZANIR? 👇', '', true); }],
-  [30.0, () => { REEL_DURUM.flas = false; REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],   // döngü: başa sar
-];
+const flasBasla = () => { REEL_DURUM.flas = true; REEL_DURUM.flasT = performance.now(); REEL_DURUM.sonFlas = null; };
+// Zamanlama: varsayılan (sessiz, 30 sn) ya da seslendirmenin kelime zamanlarından (?ses=ses/enes → ses/enes.json)
+let RZ = { 'Bu stat':1.0, 've hâlâ':1.3, 'sen seçeceksin':3.0, 'Sarı-kırmızı':5.2, 'Sarı-lacivert':6.7, 'Siyah-beyaz':8.2, 'Bordo-mavi':9.7,
+           'Valla':11.2, 'Kural':14.0, 'En çok':16.8, 'Bir de':20.0, 'Adın':22.6, 'Takip et':25.0, 'Sence':27.8, SON:30.0 };
+const SES = url.get('ses');
+if(SES){ const h = await jsonAl(SES + '.json');
+  if(h){ const ch = h.characters.join(''), st = h.character_start_times_seconds; const yeni = {};
+    for(const k of Object.keys(RZ)) if(k !== 'SON'){ const i = ch.indexOf(k); if(i >= 0) yeni[k] = st[i]; }
+    yeni.SON = h.character_end_times_seconds.at(-1) + .9; if(Object.keys(yeni).length > 10) RZ = { ...RZ, ...yeni }; } }
+function reelPlanKur(){ const T = k => Math.max(0, RZ[k]), R = k => d => renkUygula(d);
+  return [
+  [0.0,                    () => { reelKamera('zemin', 0); ctl.autoRotate = false; flasBasla(); reelYaz('100.000 KİŞİLİK STAT'); }],
+  [T('Bu stat') + .45,     () => { REEL_DURUM.flas = false; renkUygula(null); reelKamera('yuksel', 2.4); }],
+  [T('ve hâlâ'),           () => reelYaz('100.000 KİŞİLİK STAT', '…ve hâlâ rengi yok 😶')],
+  [T('sen seçeceksin')-.25,() => reelYaz('RENGİNİ SEN SEÇECEKSİN', '', true)],
+  [T('Sarı-kırmızı') - .6, () => { reelKamera('kus', 1.0); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.4; }],
+  ...['Sarı-Kırmızı','Sarı-Lacivert','Siyah-Beyaz','Bordo-Mavi'].map(ad => [T(ad.replace(/-K/,'-k').replace(/-L/,'-l').replace(/-B/,'-b').replace(/-M/,'-m')) - .08,
+     () => { const d = aday(ad); renkUygula(d); reelYaz(d.ad.toLocaleUpperCase('tr-TR') + '?', '', false, d); }]),
+  [T('Valla') - .1,        () => { renkUygula(null); ctl.autoRotate = false; reelKamera('kose', 2.6); reelYaz('HEPSİ YAKIŞIYOR', 'ama karar senin 🤝'); }],
+  [T('Kural') - .1,        () => { reelKamera('bati', 3); reelYaz('YORUMA TAKIMINI YAZ ✍️', '', true); }],
+  [T('En çok') - .1,       () => reelYaz('EN ÇOK YAZILAN KAZANIR', 'renkleri 100.000 koltuğa işlenir')],
+  [T('Bir de') - .1,       () => { reelKamera('loca', 1.8); reelYaz('İLK 1.000 KİŞİ', 'LOCADA OTURACAK 🥂', true); }],
+  [T('Adın') - .2,         () => { reelKamera('locaYakin', 1.4); REEL_DURUM.isim.visible = true; reelYaz('ADIN KOLTUĞA YAZILIR'); }],
+  [T('Takip et') - .1,     () => { REEL_DURUM.isim.visible = false; reelKamera('kus', 1.8); ctl.autoRotate = true; ctl.autoRotateSpeed = 1; reelYaz('TAKİP ET + TAKIMINI YAZ', '@' + AYAR.hesap); }],
+  [T('Sence') - .1,        () => { flasBasla(); reelYaz('SENCE HANGİSİ KAZANIR? 👇', '', true); }],
+  [T('SON'),               () => { REEL_DURUM.flas = false; if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
+  ].sort((a,b) => a[0]-b[0]); }
+const REEL_PLAN = reelPlanKur();
 function reelBaslat(){
   document.body.classList.add('reel');
   const iz = document.createElement('div'); iz.className = 'reelIz'; iz.textContent = location.host; document.body.appendChild(iz);
@@ -1126,25 +1141,91 @@ function reelBaslat(){
   const si = BOLUM.LOCA.dolum[Math.floor(LOCA_SIRA*LOCA_KOLTUK/2)]; REEL_DURUM.si = si;
   const sp = yaziSprite('@senin_adin', { fs:40, yuk:.55, zemin:AYAR.renk.vurgu, renk:'#1d1608' }); sp.position.set(SX[si], SY[si] + 1.5, SZ[si]); sp.visible = false; scene.add(sp); REEL_DURUM.isim = sp;
   reelKamera('zemin', 0);
+  if(KAYIT) return;
+  if(SES){ REEL_DURUM.ses = new Audio(SES + '.mp3'); REEL_DURUM.ses.preload = 'auto'; }
   const b = document.createElement('div'); b.className = 'reelBasla';
-  b.innerHTML = '🎬 Ekran kaydını başlat,<br>sonra ekrana dokun.<br><br><small style="opacity:.7;font-weight:600">30 saniyelik çekim döngü halinde tekrar eder.</small>';
-  b.onclick = () => { b.remove(); REEL_DURUM.acik = true; REEL_DURUM.bas = performance.now() + 400; REEL_DURUM.adim = 0; REEL_DURUM.flasT = REEL_DURUM.bas; };
+  b.innerHTML = `🎬 Ekran kaydını başlat,<br>sonra ekrana dokun.<br><br><small style="opacity:.7;font-weight:600">${Math.round(RZ.SON)} saniyelik çekim döngü halinde tekrar eder.${SES ? ' Seslendirme açık 🔊' : ''}</small>`;
+  b.onclick = () => { b.remove(); reelOynat(); REEL_DURUM.ses?.play(); };
   document.body.appendChild(b);
 }
+function reelOynat(){ REEL_DURUM.acik = true; REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }
 function reelAdim(simdi){
   if(!REEL_DURUM.acik || simdi < REEL_DURUM.bas) return;
   const t = (simdi - REEL_DURUM.bas)/1000;
   while(REEL_DURUM.adim < REEL_PLAN.length && t >= REEL_PLAN[REEL_DURUM.adim][0]){ const f = REEL_PLAN[REEL_DURUM.adim][1]; REEL_DURUM.adim++; f(); if(REEL_DURUM.adim === 0) break; }
-  if(REEL_DURUM.flas && ADAYLAR.length){ const d = flas(simdi, REEL_DURUM.flasT || REEL_DURUM.bas); if(d !== REEL_DURUM.sonFlas){ REEL_DURUM.sonFlas = d; renkUygula(d); } }
+  if(REEL_DURUM.flas && ADAYLAR.length){ const d = flas(simdi, REEL_DURUM.flasT); if(d !== REEL_DURUM.sonFlas){ REEL_DURUM.sonFlas = d; renkUygula(d); } }
 }
 if(REEL) reelBaslat();
 
+/* ---- MP4 üretimi (?reel=renk&ses=…&kayit=1): sanal saatle kare kare 1080×1920 / 30 fps, ses + hafif tribün uğultusu ---- */
+async function reelKaydet(hedefUrl){
+  const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/+esm');
+  const W = 1080, H = 1920, FPS = 30;
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false); cam.aspect = W/H; cam.updateProjectionMatrix();
+  // ses: seslendirme + tribün uğultusu (OfflineAudioContext ile karıştırılır)
+  const sr = 44100, ham = await (await fetch(SES + '.mp3')).arrayBuffer();
+  const ses = await new AudioContext({ sampleRate:sr }).decodeAudioData(ham);
+  const sure = RZ.SON, N = Math.ceil(sure*sr), oac = new OfflineAudioContext(2, N, sr);
+  const g = oac.createBufferSource(); g.buffer = ses; g.connect(oac.destination); g.start(0);
+  const nb = oac.createBuffer(2, N, sr); for(let c=0;c<2;c++){ const d = nb.getChannelData(c); let l = 0; for(let i=0;i<N;i++){ l = (l + .02*(Math.random()*2-1))/1.02; d[i] = l*3.2; } }
+  const ns = oac.createBufferSource(); ns.buffer = nb; const bp = oac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = .6;
+  const ng = oac.createGain(); ng.gain.setValueAtTime(.0, 0); ng.gain.linearRampToValueAtTime(.16, .4); ng.gain.setValueAtTime(.16, sure-.6); ng.gain.linearRampToValueAtTime(.0, sure);
+  ns.connect(bp).connect(ng).connect(oac.destination); ns.start(0);
+  const mix = await oac.startRendering();
+  const target = new ArrayBufferTarget();
+  const muxer = new Muxer({ target, video:{ codec:'avc', width:W, height:H, frameRate:FPS }, audio:{ codec:'aac', numberOfChannels:2, sampleRate:sr }, fastStart:'in-memory' });
+  const hata = e => { console.error(e); window.__kayitHata = String(e); };
+  const ve = new VideoEncoder({ output:(c,m) => muxer.addVideoChunk(c,m), error:hata });
+  ve.configure({ codec:'avc1.640028', width:W, height:H, bitrate:12e6, framerate:FPS });
+  const ae = new AudioEncoder({ output:(c,m) => muxer.addAudioChunk(c,m), error:hata });
+  ae.configure({ codec:'mp4a.40.2', numberOfChannels:2, sampleRate:sr, bitrate:192000 });
+  const L = mix.getChannelData(0), Rr = mix.getChannelData(1);
+  for(let i=0; i<N; i+=1024){ const n = Math.min(1024, N-i), buf = new Float32Array(n*2); buf.set(L.subarray(i,i+n), 0); buf.set(Rr.subarray(i,i+n), n);
+    const ad = new AudioData({ format:'f32-planar', sampleRate:sr, numberOfFrames:n, numberOfChannels:2, timestamp:Math.round(i/sr*1e6), data:buf }); ae.encode(ad); ad.close(); }
+  // görüntü
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  const kareSayi = Math.ceil(sure*FPS); window.__kayitIlerleme = 0;
+  window.__SANAL = 1000; REEL_DURUM.bas = window.__SANAL; REEL_DURUM.acik = true; REEL_DURUM.adim = 0;
+  for(let i=0; i<kareSayi; i++){
+    window.__SANAL = 1000 + i*1000/FPS; kare(1/FPS);
+    x.drawImage(renderer.domElement, 0, 0, W, H); reelYaziCiz(x, W, H);
+    const fr = new VideoFrame(cv, { timestamp:Math.round(i*1e6/FPS), duration:Math.round(1e6/FPS) }); ve.encode(fr, { keyFrame: i % 60 === 0 }); fr.close();
+    if(ve.encodeQueueSize > 8) await new Promise(r => setTimeout(r, 5));
+    if(i % 15 === 0){ window.__kayitIlerleme = i/kareSayi; await new Promise(r => setTimeout(r, 0)); }
+  }
+  await ve.flush(); await ae.flush(); muxer.finalize();
+  const blob = new Blob([target.buffer], { type:'video/mp4' });
+  if(hedefUrl){ await fetch(hedefUrl, { method:'POST', body:blob }); }
+  window.__kayitIlerleme = 1; window.__kayitBoyut = blob.size; return blob;
+}
+// Kayıtta ekran yazısı tuvale çizilir (HTML yazılarla aynı görünüm)
+function reelYaziCiz(x, W, H){
+  x.save(); x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.font = '900 30px system-ui'; x.fillStyle = 'rgba(255,255,255,.85)'; x.shadowColor = '#000'; x.shadowBlur = 10; x.fillText(location.host.replace(/^localhost.*$/, '100binkoltuk.github.io'), W/2, H*.11);
+  const y = REEL_DURUM.yazi; if(!y){ x.restore(); return; }
+  const k = Math.min(1, (performance.now() - REEL_DURUM.yaziT)/280), s = k < 1 ? .4 + .6*(1 + 2.2*Math.pow(k-1,3) + 1.2*Math.pow(k-1,2)) : 1;
+  x.translate(W/2, H*.24); x.scale(s, s); x.globalAlpha = Math.min(1, k*2);
+  // satırlara böl
+  let fs = 104; x.font = `900 ${fs}px system-ui`; const maxW = W*.86, kel = y.b.split(' '), sat = []; let cur = '';
+  for(const w of kel){ const t = cur ? cur + ' ' + w : w; if(x.measureText(t).width > maxW && cur){ sat.push(cur); cur = w; } else cur = t; } sat.push(cur);
+  const swR = y.d ? fs*.36 : 0;
+  sat.forEach((t, i) => { const yy = i*fs*1.05; let ox = 0;
+    if(y.d && i === 0){ const tw = x.measureText(t).width; ox = swR + 10; const cx = -tw/2 - ox/2 - 2, cy = yy - fs*.33;
+      x.beginPath(); x.arc(cx, cy, swR, Math.PI/2, Math.PI*1.5); x.fillStyle = y.d.ana; x.fill(); x.beginPath(); x.arc(cx, cy, swR, -Math.PI/2, Math.PI/2); x.fillStyle = y.d.ikinci; x.fill();
+      x.lineWidth = 6; x.strokeStyle = '#fff'; x.beginPath(); x.arc(cx, cy, swR, 0, 7); x.stroke(); }
+    x.lineJoin = 'round'; x.lineWidth = 14; x.strokeStyle = '#000'; x.shadowBlur = 24; x.shadowColor = 'rgba(0,0,0,.7)'; x.strokeText(t, ox/2, yy);
+    x.shadowBlur = 0; x.fillStyle = y.vurgu ? AYAR.renk.vurgu : '#fff'; x.fillText(t, ox/2, yy); });
+  if(y.alt){ x.font = '900 54px system-ui'; const yy = sat.length*fs*1.05 - fs*.2; x.lineWidth = 10; x.strokeStyle = '#000'; x.strokeText(y.alt, 0, yy); x.fillStyle = '#fff'; x.fillText(y.alt, 0, yy); }
+  x.restore();
+}
+window.__reelKaydet = reelKaydet;
+
 const saat = new THREE.Clock(); let ekranZ = 0;
-renderer.setAnimationLoop(() => {
-  const dt = Math.min(saat.getDelta(), .1), t = saat.elapsedTime, simdi = performance.now();
+function kare(sabitDt){
+  const dt = sabitDt ?? Math.min(saat.getDelta(), .1), t = saat.elapsedTime, simdi = performance.now();
   if(ucus){ let k = Math.min(1, (simdi - ucus.bas)/ucus.sure); const e = k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k+2, 3)/2;
     cam.position.lerpVectors(ucus.p0, ucus.p1, e); ctl.target.lerpVectors(ucus.t0, ucus.t1, e); if(k >= 1) ucus = null; }
-  ctl.update();
+  ctl.update(dt);
   for(const v of vincler) v.kol.rotation.y = v.baz + Math.sin(t*.15 + v.faz)*.6;
   if(TUR.acik) renkTuruAdim(simdi);
   if(REEL) reelAdim(simdi);
@@ -1156,7 +1237,8 @@ renderer.setAnimationLoop(() => {
   if(simdi - ekranZ > 50){ ekranZ = simdi; ekranCiz(); }
   etiketCiz();
   renderer.render(scene, cam);
-});
+}
+if(!KAYIT) renderer.setAnimationLoop(() => kare());
 bantGuncelle();
 if(!OYLAMA && !RENK_SECILDI) $('renkModBtn').style.display = 'none';
 window.__hazir = true;
