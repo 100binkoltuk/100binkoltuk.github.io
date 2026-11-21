@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@700;900&display=swap" rel="stylesheet">
 <meta property="og:title" content="100 Bin Koltuk · Takip et, koltuğuna otur">
+<meta property="og:image" content="https://100binkoltuk.github.io/logo.png">
+<link rel="icon" href="logo.png">
 <meta property="og:description" content="100.000 kişilik stadı birlikte kuruyoruz. İlk 1.000 kişi locada. Renkleri sen seç.">
 <style>
 :root{--ana:#D7262E;--anaP:#FF5A5F;--krem:#F4F1EA;--koyu:#16181D;--koyu2:#0E0F12;--vurgu:#F2C14E;--yesil:#3BB273;--kart:rgba(18,20,26,.9)}
@@ -441,7 +443,8 @@ function armaCiz(img){
 }
 armaCiz(null);
 let armaImg = null;
-if(KARAR.arma){ const im = new Image(); im.onload = () => { armaImg = im; armaCiz(im); }; im.src = KARAR.arma; }
+// arma seçilene kadar sahanın ortasında logo durur
+{ const im = new Image(); im.onload = () => { armaImg = im; armaCiz(im); }; im.src = KARAR.arma || AYAR.logo; }
 const arma = new THREE.Mesh(new THREE.CircleGeometry(8, 48), armaMat); arma.rotation.x = -Math.PI/2; arma.position.y = .12; scene.add(arma);
 
 // Şehir: binalar, yollar, otopark, ağaçlar (Mahalle hissi)
