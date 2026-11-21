@@ -1,0 +1,21 @@
+{
+ "instagram": {
+  "renk": null,
+  "renkOylamasi": [
+   { "ad": "Sarı-Kırmızı",  "takim": "Galatasaray",  "ana": "#A90432", "ikinci": "#FDB912", "oy": 0 },
+   { "ad": "Sarı-Lacivert", "takim": "Fenerbahçe",   "ana": "#0B2A6F", "ikinci": "#FFED00", "oy": 0 },
+   { "ad": "Siyah-Beyaz",   "takim": "Beşiktaş",     "ana": "#1A1A1A", "ikinci": "#FFFFFF", "oy": 0 },
+   { "ad": "Bordo-Mavi",    "takim": "Trabzonspor",  "ana": "#7A1F3D", "ikinci": "#5DB3E6", "oy": 0 },
+   { "ad": "Yeşil-Beyaz",   "takim": "Bursaspor",    "ana": "#0E7A3A", "ikinci": "#FFFFFF", "oy": 0 },
+   { "ad": "Kırmızı-Siyah", "takim": "Eskişehirspor", "ana": "#C8102E", "ikinci": "#111111", "oy": 0 }
+  ],
+  "locaHakki": 1000,
+  "stadAdi": null,
+  "takimAdi": null,
+  "arma": null,
+  "ilk11": [],
+  "siradaki": "RENKLER",
+  "hedef": 5000,
+  "gecmis": []
+ }
+}
