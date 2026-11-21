@@ -111,6 +111,8 @@ body.reel .ust,body.reel .alt,body.reel .yon,body.reel .renkBant,body.reel #etik
 .reelYazi small{display:block;margin-top:10px;font-size:clamp(17px,4.6vw,30px);font-weight:900;color:#fff;text-shadow:0 2px 0 #000,0 0 14px #000}
 .reelYazi .sw{display:inline-block;width:.8em;height:.8em;border-radius:50%;border:3px solid #fff;vertical-align:-.05em;margin-right:.25em}
 @keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+.reelCip{position:fixed;left:50%;top:64%;transform:translateX(-50%);z-index:8;padding:8px 18px;border-radius:30px;background:rgba(10,11,15,.78);color:#fff;font-weight:900;font-size:clamp(16px,4.4vw,26px);pointer-events:none;white-space:nowrap}
+.reelCip .sw{display:inline-block;width:1em;height:1em;border-radius:50%;border:2px solid #fff;vertical-align:-.15em;margin-right:.4em}
 .reelIz{position:fixed;left:0;right:0;top:11%;z-index:8;text-align:center;font-weight:900;font-size:clamp(12px,3.2vw,18px);color:#fff;opacity:.85;text-shadow:0 1px 6px #000;pointer-events:none}
 .reelBasla{position:fixed;inset:0;z-index:40;background:#000;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:800;font-size:18px;padding:30px;cursor:pointer}
 </style>
@@ -532,8 +534,10 @@ let FORMA = [], KR = null;
 // Renk türevleri: koltuk tonları + formalar. Oylama sürerken taraftarlar oy verdikleri renklerin formalarını giyer (oy oranında)
 function renkTuret(){
   const a = C(AYAR.renk.ana), ik = C(AYAR.renk.ikinci);
-  KR = { k1:a.clone(), k1g:a.clone().multiplyScalar(.78), k2:a.clone().multiplyScalar(.9), k2g:a.clone().multiplyScalar(.7),
-         loca: boyanmamis() ? C('#d6d9df') : C('#ece6da') };
+  const ikT = ik.clone().multiplyScalar(ik.getHSL({}).l > .85 ? .9 : 1);   // saf beyaz koltuklar parlamasın
+  KR = { k1:a.clone(), k1g:a.clone().multiplyScalar(.8), k2:a.clone().multiplyScalar(.92), k2g:a.clone().multiplyScalar(.74),
+         i1:ikT.clone(), i1g:ikT.clone().multiplyScalar(.85), i2:ikT.clone().multiplyScalar(.94), i2g:ikT.clone().multiplyScalar(.8),
+         iki: !boyanmamis(), loca: boyanmamis() ? C('#d6d9df') : ikT.clone().lerp(C('#ece6da'), .35) };
   if(boyanmamis() && ADAYLAR.length){
     FORMA = []; const top = OY_TOPLAM || ADAYLAR.length;
     for(const d of ADAYLAR){ const k = Math.max(1, Math.round(80 * (OY_TOPLAM ? d.oy : 1) / top)); for(let i=0; i<k; i++) FORMA.push(C(i%3 === 2 ? d.ikinci : d.ana)); }
@@ -546,6 +550,9 @@ let BAZ_GOVDE, BAZ_KAFA, BAZ_KOLTUK, FAN_ACI, FAN_BAZY;
 function bolumKoltukRengi(b, si){
   if(b.loca) return KR.loca.clone();
   const g = ((SSIRA[si]>>1) + b.kenar) % 7 === 0;
+  // iki renk: her katta 5'er sıralık şeritler, ana renk ve ikinci renk sırayla (alt ve üst kat ters başlar)
+  const ikinci = KR.iki && (Math.floor((SSIRA[si]-1)/5) + (b.kat === 1 ? 0 : 1)) % 2 === 1;
+  if(ikinci) return (b.kat === 1 ? (g ? KR.i1g : KR.i1) : (g ? KR.i2g : KR.i2)).clone();
   return (b.kat === 1 ? (g ? KR.k1g : KR.k1) : (g ? KR.k2g : KR.k2)).clone();
 }
 
@@ -1105,39 +1112,38 @@ function reelKamera(ad, sure){
   }[ad];
   if(sure === 0){ cam.position.copy(P[0]); ctl.target.copy(P[1]); ucus = null; } else uc(P[0], P[1], sure);
 }
-const flas = (simdi, t0) => { const list = ADAYLAR.slice(0,4), i = Math.floor((simdi - t0)/230); return list[i % list.length]; };
-const flasBasla = () => { REEL_DURUM.flas = true; REEL_DURUM.flasT = performance.now(); REEL_DURUM.sonFlas = null; };
-// Zamanlama: varsayılan (sessiz, 30 sn) ya da seslendirmenin kelime zamanlarından (?ses=ses/enes → ses/enes.json)
-let RZ = { 'Bu stat':1.0, 've hâlâ':1.3, 'sen seçeceksin':3.0, 'Sarı-kırmızı':5.2, 'Sarı-lacivert':6.7, 'Siyah-beyaz':8.2, 'Bordo-mavi':9.7,
-           'Valla':11.2, 'Kural':14.0, 'En çok':16.8, 'Bir de':20.0, 'Adın':22.6, 'Takip et':25.0, 'Sence':27.8, SON:30.0 };
+// Zamanlama: varsayılan (sessiz) ya da seslendirmenin kelime zamanlarından (?ses=ses/enes2 → ses/enes2.json)
+let RZ = { 'Bu stat':1.17, 've hâlâ':3.15, 'Stadımızın':4.38, 'Sen de':6.78, 'En çok':9.33, 'Ve her':12.54, 'Çünkü':14.47,
+           'Ama loca':18.78, 'Hadi':20.95, 'Sence':22.05, SON:24.4 };
 const SES = url.get('ses');
 if(SES){ const h = await jsonAl(SES + '.json');
   if(h){ const ch = h.characters.join(''), st = h.character_start_times_seconds; const yeni = {};
     for(const k of Object.keys(RZ)) if(k !== 'SON'){ const i = ch.indexOf(k); if(i >= 0) yeni[k] = st[i]; }
-    yeni.SON = h.character_end_times_seconds.at(-1) + .9; if(Object.keys(yeni).length > 10) RZ = { ...RZ, ...yeni }; } }
-function reelPlanKur(){ const T = k => Math.max(0, RZ[k]), R = k => d => renkUygula(d);
+    yeni.SON = h.character_end_times_seconds.at(-1) + .9; if(Object.keys(yeni).length > 7) RZ = { ...RZ, ...yeni }; } }
+// Renk döngüsü: konuşma boyunca stat iki renkli takım renkleri arasında döner
+const dongu = (aralik) => { REEL_DURUM.dongu = { t0:performance.now(), aralik }; REEL_DURUM.sonDongu = null; };
+const donguDur = () => { REEL_DURUM.dongu = null; REEL_DURUM.cip = null; };
+function reelPlanKur(){ const T = k => Math.max(0, RZ[k]);
   return [
-  [0.0,                    () => { reelKamera('zemin', 0); ctl.autoRotate = false; flasBasla(); reelYaz('100.000 KİŞİLİK STAT'); }],
-  [T('Bu stat') + .45,     () => { REEL_DURUM.flas = false; renkUygula(null); reelKamera('yuksel', 2.4); }],
-  [T('ve hâlâ'),           () => reelYaz('100.000 KİŞİLİK STAT', '…ve hâlâ rengi yok 😶')],
-  [T('sen seçeceksin')-.25,() => reelYaz('RENGİNİ SEN SEÇECEKSİN', '', true)],
-  [T('Sarı-kırmızı') - .6, () => { reelKamera('kus', 1.0); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.4; }],
-  ...['Sarı-Kırmızı','Sarı-Lacivert','Siyah-Beyaz','Bordo-Mavi'].map(ad => [T(ad.replace(/-K/,'-k').replace(/-L/,'-l').replace(/-B/,'-b').replace(/-M/,'-m')) - .08,
-     () => { const d = aday(ad); renkUygula(d); reelYaz(d.ad.toLocaleUpperCase('tr-TR') + '?', '', false, d); }]),
-  [T('Valla') - .1,        () => { renkUygula(null); ctl.autoRotate = false; reelKamera('kose', 2.6); reelYaz('HEPSİ YAKIŞIYOR', 'ama karar senin 🤝'); }],
-  [T('Kural') - .1,        () => { reelKamera('bati', 3); reelYaz('YORUMA TAKIMINI YAZ ✍️', '', true); }],
-  [T('En çok') - .1,       () => reelYaz('EN ÇOK YAZILAN KAZANIR', 'renkleri 100.000 koltuğa işlenir')],
-  [T('Bir de') - .1,       () => { reelKamera('loca', 1.8); reelYaz('İLK 1.000 KİŞİ', 'LOCADA OTURACAK 🥂', true); }],
-  [T('Adın') - .2,         () => { reelKamera('locaYakin', 1.4); REEL_DURUM.isim.visible = true; reelYaz('ADIN KOLTUĞA YAZILIR'); }],
-  [T('Takip et') - .1,     () => { REEL_DURUM.isim.visible = false; reelKamera('kus', 1.8); ctl.autoRotate = true; ctl.autoRotateSpeed = 1; reelYaz('TAKİP ET + TAKIMINI YAZ', '@' + AYAR.hesap); }],
-  [T('Sence') - .1,        () => { flasBasla(); reelYaz('SENCE HANGİSİ KAZANIR? 👇', '', true); }],
-  [T('SON'),               () => { REEL_DURUM.flas = false; if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
+  [0.0,                  () => { reelKamera('zemin', 0); ctl.autoRotate = false; dongu(230); reelYaz('100.000 KİŞİLİK STAT'); }],
+  [T('Bu stat') + .45,   () => { donguDur(); renkUygula(null); reelKamera('yuksel', 2.4); }],
+  [T('ve hâlâ'),         () => reelYaz('100.000 KİŞİLİK STAT', '…ve hâlâ rengi yok 😶')],
+  [T('Stadımızın') - .1, () => { reelKamera('kus', 1.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.3; dongu(1100); reelYaz('STADIN RENGİNİ BİRLİKTE SEÇİYORUZ'); }],
+  [T('Sen de') - .1,     () => { reelKamera('bati', 2.6); ctl.autoRotate = false; reelYaz('TUTTUĞUN TAKIMI YORUMA YAZ ✍️', '', true); }],
+  [T('En çok') - .1,     () => { reelKamera('kose', 2.6); reelYaz('EN ÇOK YORUM ALAN', 'renkleri bu stadı süslesin'); }],
+  [T('Ve her') - .1,     () => { reelKamera('kus', 1.6); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.6; reelYaz('HER YORUM BİR ŞANS 🎟️', '', true); }],
+  [T('Çünkü') - .1,      () => { ctl.autoRotate = false; reelKamera('loca', 1.8); reelYaz('YORUM AT', 'LOCADA 1 KOLTUK SENİN 🥂'); }],
+  [T('Ama loca') - .15,  () => { reelKamera('locaYakin', 1.4); REEL_DURUM.isim.visible = true; reelYaz('LOCA 1.000 KİŞİLİK', 'ilk gelen alır ⏳', true); }],
+  [T('Hadi') - .1,       () => { REEL_DURUM.isim.visible = false; reelKamera('kus', 1.4); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('TAKIMINI YAZ 👇', '@' + AYAR.hesap); }],
+  [T('Sence') - .1,      () => { dongu(230); reelYaz('SENCE HANGİ RENKLER KAZANIR?', '', true); }],
+  [T('SON'),             () => { donguDur(); if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
   ].sort((a,b) => a[0]-b[0]); }
 const REEL_PLAN = reelPlanKur();
 function reelBaslat(){
   document.body.classList.add('reel');
   const iz = document.createElement('div'); iz.className = 'reelIz'; iz.textContent = location.host; document.body.appendChild(iz);
   const y = document.createElement('div'); y.className = 'reelYazi'; y.id = 'reelYazi'; document.body.appendChild(y);
+  const cp = document.createElement('div'); cp.className = 'reelCip'; cp.id = 'reelCip'; cp.style.display = 'none'; document.body.appendChild(cp);
   const si = BOLUM.LOCA.dolum[Math.floor(LOCA_SIRA*LOCA_KOLTUK/2)]; REEL_DURUM.si = si;
   const sp = yaziSprite('@senin_adin', { fs:40, yuk:.55, zemin:AYAR.renk.vurgu, renk:'#1d1608' }); sp.position.set(SX[si], SY[si] + 1.5, SZ[si]); sp.visible = false; scene.add(sp); REEL_DURUM.isim = sp;
   reelKamera('zemin', 0);
@@ -1148,12 +1154,16 @@ function reelBaslat(){
   b.onclick = () => { b.remove(); reelOynat(); REEL_DURUM.ses?.play(); };
   document.body.appendChild(b);
 }
+function cipGuncelle(){ const el = $('reelCip'); if(!el) return; const d = REEL_DURUM.cip;
+  el.innerHTML = d ? `<span class="sw" style="${swatch(d)}"></span>${esc(d.ad.toLocaleUpperCase('tr-TR'))}` : ''; el.style.display = d ? 'block' : 'none'; }
 function reelOynat(){ REEL_DURUM.acik = true; REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }
 function reelAdim(simdi){
   if(!REEL_DURUM.acik || simdi < REEL_DURUM.bas) return;
   const t = (simdi - REEL_DURUM.bas)/1000;
   while(REEL_DURUM.adim < REEL_PLAN.length && t >= REEL_PLAN[REEL_DURUM.adim][0]){ const f = REEL_PLAN[REEL_DURUM.adim][1]; REEL_DURUM.adim++; f(); if(REEL_DURUM.adim === 0) break; }
-  if(REEL_DURUM.flas && ADAYLAR.length){ const d = flas(simdi, REEL_DURUM.flasT); if(d !== REEL_DURUM.sonFlas){ REEL_DURUM.sonFlas = d; renkUygula(d); } }
+  const dg = REEL_DURUM.dongu;
+  if(dg && ADAYLAR.length){ const d = ADAYLAR[Math.floor((simdi - dg.t0)/dg.aralik) % ADAYLAR.length];
+    if(d !== REEL_DURUM.sonDongu){ REEL_DURUM.sonDongu = d; renkUygula(d); REEL_DURUM.cip = dg.aralik > 500 ? d : null; cipGuncelle(); } }
 }
 if(REEL) reelBaslat();
 
@@ -1161,7 +1171,8 @@ if(REEL) reelBaslat();
 async function reelKaydet(hedefUrl){
   const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/+esm');
   const W = 1080, H = 1920, FPS = 30;
-  renderer.setPixelRatio(1); renderer.setSize(W, H, false); cam.aspect = W/H; cam.updateProjectionMatrix();
+  const SS = 2;   // 2x süper örnekleme: uzaktaki binlerce koltuğun titreşip bozulmasını (moiré) önler
+  renderer.setPixelRatio(1); renderer.setSize(W*SS, H*SS, false); cam.aspect = W/H; cam.updateProjectionMatrix();
   // ses: seslendirme + tribün uğultusu (OfflineAudioContext ile karıştırılır)
   const sr = 44100, ham = await (await fetch(SES + '.mp3')).arrayBuffer();
   const ses = await new AudioContext({ sampleRate:sr }).decodeAudioData(ham);
@@ -1176,7 +1187,7 @@ async function reelKaydet(hedefUrl){
   const muxer = new Muxer({ target, video:{ codec:'avc', width:W, height:H, frameRate:FPS }, audio:{ codec:'aac', numberOfChannels:2, sampleRate:sr }, fastStart:'in-memory' });
   const hata = e => { console.error(e); window.__kayitHata = String(e); };
   const ve = new VideoEncoder({ output:(c,m) => muxer.addVideoChunk(c,m), error:hata });
-  ve.configure({ codec:'avc1.640028', width:W, height:H, bitrate:12e6, framerate:FPS });
+  ve.configure({ codec:'avc1.640028', width:W, height:H, bitrate:16e6, framerate:FPS });
   const ae = new AudioEncoder({ output:(c,m) => muxer.addAudioChunk(c,m), error:hata });
   ae.configure({ codec:'mp4a.40.2', numberOfChannels:2, sampleRate:sr, bitrate:192000 });
   const L = mix.getChannelData(0), Rr = mix.getChannelData(1);
@@ -1188,7 +1199,7 @@ async function reelKaydet(hedefUrl){
   window.__SANAL = 1000; REEL_DURUM.bas = window.__SANAL; REEL_DURUM.acik = true; REEL_DURUM.adim = 0;
   for(let i=0; i<kareSayi; i++){
     window.__SANAL = 1000 + i*1000/FPS; kare(1/FPS);
-    x.drawImage(renderer.domElement, 0, 0, W, H); reelYaziCiz(x, W, H);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(renderer.domElement, 0, 0, W, H); reelYaziCiz(x, W, H);
     const fr = new VideoFrame(cv, { timestamp:Math.round(i*1e6/FPS), duration:Math.round(1e6/FPS) }); ve.encode(fr, { keyFrame: i % 60 === 0 }); fr.close();
     if(ve.encodeQueueSize > 8) await new Promise(r => setTimeout(r, 5));
     if(i % 15 === 0){ window.__kayitIlerleme = i/kareSayi; await new Promise(r => setTimeout(r, 0)); }
@@ -1202,6 +1213,12 @@ async function reelKaydet(hedefUrl){
 function reelYaziCiz(x, W, H){
   x.save(); x.textAlign = 'center'; x.textBaseline = 'alphabetic';
   x.font = '900 30px system-ui'; x.fillStyle = 'rgba(255,255,255,.85)'; x.shadowColor = '#000'; x.shadowBlur = 10; x.fillText(location.host.replace(/^localhost.*$/, '100binkoltuk.github.io'), W/2, H*.11);
+  const cp = REEL_DURUM.cip;
+  if(cp){ x.save(); x.font = '900 50px system-ui'; const t = cp.ad.toLocaleUpperCase('tr-TR'), tw = x.measureText(t).width, r = 24, w = tw + r*2 + 26 + 56, cy = H*.66;
+    x.shadowBlur = 0; x.fillStyle = 'rgba(10,11,15,.8)'; x.beginPath(); x.roundRect(W/2 - w/2, cy - 42, w, 84, 42); x.fill();
+    const cx = W/2 - w/2 + 28 + r; x.beginPath(); x.arc(cx, cy, r, Math.PI/2, Math.PI*1.5); x.fillStyle = cp.ana; x.fill(); x.beginPath(); x.arc(cx, cy, r, -Math.PI/2, Math.PI/2); x.fillStyle = cp.ikinci; x.fill();
+    x.lineWidth = 4; x.strokeStyle = '#fff'; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke();
+    x.fillStyle = '#fff'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(t, cx + r + 18, cy + 2); x.restore(); }
   const y = REEL_DURUM.yazi; if(!y){ x.restore(); return; }
   const k = Math.min(1, (performance.now() - REEL_DURUM.yaziT)/280), s = k < 1 ? .4 + .6*(1 + 2.2*Math.pow(k-1,3) + 1.2*Math.pow(k-1,2)) : 1;
   x.translate(W/2, H*.24); x.scale(s, s); x.globalAlpha = Math.min(1, k*2);
