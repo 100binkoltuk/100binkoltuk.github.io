@@ -538,7 +538,7 @@ function renkTuret(){
   const ikT = ik.clone().multiplyScalar(ik.getHSL({}).l > .85 ? .9 : 1);   // saf beyaz koltuklar parlamasın
   KR = { k1:a.clone(), k1g:a.clone().multiplyScalar(.8), k2:a.clone().multiplyScalar(.92), k2g:a.clone().multiplyScalar(.74),
          i1:ikT.clone(), i1g:ikT.clone().multiplyScalar(.85), i2:ikT.clone().multiplyScalar(.94), i2g:ikT.clone().multiplyScalar(.8),
-         iki: !boyanmamis(), loca: boyanmamis() ? C('#d6d9df') : ikT.clone().lerp(C('#ece6da'), .35) };
+         iki: !boyanmamis(), loca: C('#1c1b20') };   // loca: siyah deri koltuk (her renkte aynı, lüks görünüm)
   if(boyanmamis() && ADAYLAR.length){
     FORMA = []; const top = OY_TOPLAM || ADAYLAR.length;
     for(const d of ADAYLAR){ const k = Math.max(1, Math.round(80 * (OY_TOPLAM ? d.oy : 1) / top)); for(let i=0; i<k; i++) FORMA.push(C(i%3 === 2 ? d.ikinci : d.ana)); }
@@ -615,13 +615,44 @@ function yapiKur(){
   // locaların camı ve bölmeleri
   for(const [id, e] of [['LOCA',4],['LOCA2',0]]){ if(!acikMi(id)) continue;
     const K = kenar(e, DIS(1) + .5), Kd = kenar(e, DIS(1) + 2.6), W = LOCA_KUTU*LOCA_KUTU_W, Hh = KAT2_ALT - KORIDOR_Y;
-    const cam_ = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.MeshLambertMaterial({ color:'#9fd0ff', transparent:true, opacity:.16, side:THREE.DoubleSide, depthWrite:false }));
+    const cam_ = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.MeshLambertMaterial({ color:'#ffe3b0', transparent:true, opacity:.1, side:THREE.DoubleSide, depthWrite:false }));
     cam_.position.set(K.mx, KORIDOR_Y + Hh/2, K.mz); cam_.rotation.y = Math.atan2(K.nx, K.nz); YAPI.add(cam_);
-    const bolme = []; for(let k=0; k<=LOCA_KUTU; k++){ const s = (k - LOCA_KUTU/2)*LOCA_KUTU_W; bolme.push([Kd.mx+Kd.ux*s, KORIDOR_Y + Hh/2, Kd.mz+Kd.uz*s, Kd.ry, .12, Hh, 4.2]); }
-    YAPI.add(kutuSeti('#d8d2c6', bolme));
-    const zm = []; for(let r=0; r<LOCA_SIRA; r++){ const Kr = kenar(e, DIS(1) + .9 + r*.72); zm.push([Kr.mx, KORIDOR_Y + .1 + r*.32 - .1, Kr.mz, Kr.ry, W, .2 + .0, .72]); }
-    YAPI.add(kutuSeti('#2a2d36', zm));
-    const ser = new THREE.Mesh(new THREE.BoxGeometry(W, .1, .1), new THREE.MeshBasicMaterial({ color:AYAR.renk.vurgu })); ser.position.set(K.mx, KAT2_ALT - .2, K.mz); ser.rotation.y = K.ry; YAPI.add(ser);
+    const ALTIN = M('#c9a24a', { emissive:'#6b4e12', emissiveIntensity:.55 });
+    // ceviz bölmeler + altın başlık
+    const bolme = [], bolmeUst = [], dikme = [];
+    for(let k=0; k<=LOCA_KUTU; k++){ const s = (k - LOCA_KUTU/2)*LOCA_KUTU_W;
+      bolme.push([Kd.mx+Kd.ux*s, KORIDOR_Y + Hh/2, Kd.mz+Kd.uz*s, Kd.ry, .14, Hh, 4.2]);
+      bolmeUst.push([Kd.mx+Kd.ux*s, KORIDOR_Y + 1.25, Kd.mz+Kd.uz*s, Kd.ry, .2, .06, 4.25]);
+      dikme.push([K.mx+K.ux*s, KORIDOR_Y + Hh/2, K.mz+K.uz*s, K.ry, .09, Hh, .09]); }      // camda altın dikmeler
+    YAPI.add(kutuSeti('#3a2618', bolme)); YAPI.add(kutuSeti(null, bolmeUst, { mat:ALTIN })); YAPI.add(kutuSeti(null, dikme, { mat:ALTIN }));
+    // bordo halı basamaklar + her basamağın önünde altın şerit
+    const zm = [], serit = [];
+    for(let r=0; r<LOCA_SIRA; r++){ const Kr = kenar(e, DIS(1) + .9 + r*.72), y = KORIDOR_Y + .1 + r*.32 - .1;
+      zm.push([Kr.mx, y, Kr.mz, Kr.ry, W, .2, .72]); const Kf = kenar(e, DIS(1) + .9 + r*.72 - .36); serit.push([Kf.mx, y + .1, Kf.mz, Kf.ry, W, .03, .04]); }
+    YAPI.add(kutuSeti(null, zm, { mat:M('#5a1822', { emissive:'#3a0d12', emissiveIntensity:.6 }) })); YAPI.add(kutuSeti(null, serit, { mat:ALTIN }));
+    // koltuk kolçakları (altın)
+    const kol = [];
+    for(const si of BOLUM[id].dolum){ const n = NRM[e], tx = -n[1], tz = n[0];
+      for(const sg of [-1, 1]) kol.push([SX[si] + tx*sg*.32, SY[si] + .38, SZ[si] + tz*sg*.32, SR[si], .05, .14, .4]); }
+    YAPI.add(kutuSeti(null, kol, { mat:M('#7a5c24', { emissive:'#3a2a08', emissiveIntensity:.4 }) }));
+    // arka duvar: sıcak ışıklı ceviz panel + her locada altın amblem
+    const Kb = kenar(e, DIS(1) + 4.75), arkaTex = cizimDoku(512, 160, (x) => {
+      const g = x.createLinearGradient(0,0,0,160); g.addColorStop(0,'#2a1a10'); g.addColorStop(.55,'#5a3a1e'); g.addColorStop(1,'#2a1a10'); x.fillStyle = g; x.fillRect(0,0,512,160);
+      for(let i=0;i<512;i+=32){ x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(i,0,2,160); }
+      const lg = x.createRadialGradient(256,38,4,256,38,150); lg.addColorStop(0,'rgba(255,214,150,.55)'); lg.addColorStop(1,'rgba(255,214,150,0)'); x.fillStyle = lg; x.fillRect(0,0,512,160);
+      x.strokeStyle = '#d9b45a'; x.lineWidth = 4; x.beginPath(); x.arc(256, 38, 28, 0, 7); x.stroke();
+      x.fillStyle = '#e8c766'; x.font = '900 24px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(AYAR.kisaltma, 256, 40);
+      x.font = '800 17px system-ui'; x.fillText('V I P   L O C A', 256, 84); });
+    arkaTex.wrapS = THREE.RepeatWrapping; arkaTex.repeat.set(LOCA_KUTU, 1);
+    const arka = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.MeshBasicMaterial({ map:arkaTex, side:THREE.DoubleSide }));
+    arka.position.set(Kb.mx, KORIDOR_Y + Hh/2, Kb.mz); arka.rotation.y = Math.atan2(-Kb.nx, -Kb.nz); YAPI.add(arka);
+    // camın üstünde siyah-altın alın bandı: "VIP LOCA"
+    const bantTex = cizimDoku(1024, 64, (x) => { x.fillStyle = '#0d0c0f'; x.fillRect(0,0,1024,64); x.fillStyle = '#c9a24a'; x.fillRect(0,2,1024,3); x.fillRect(0,59,1024,3);
+      x.fillStyle = '#e8c766'; x.font = '900 34px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('◆  V I P   L O C A  ◆  1 0 0 . 0 0 0  K O L T U K  ◆', 512, 34); });
+    bantTex.wrapS = THREE.RepeatWrapping; bantTex.repeat.set(Math.max(1, Math.round(W/15)), 1);
+    const Ka = kenar(e, DIS(1) + .42), bant = new THREE.Mesh(new THREE.PlaneGeometry(W, .5), new THREE.MeshBasicMaterial({ map:bantTex }));
+    bant.position.set(Ka.mx, KAT2_ALT - .3, Ka.mz); bant.rotation.y = Math.atan2(Ka.nx, Ka.nz); bant.rotation.y += Math.PI; YAPI.add(bant);
+    const ser = new THREE.Mesh(new THREE.BoxGeometry(W, .08, .08), ALTIN); ser.position.set(K.mx, KORIDOR_Y + .02, K.mz); ser.rotation.y = K.ry; YAPI.add(ser);
   }
 
   /* ---- koltuklar ve taraftarlar ---- */
@@ -637,7 +668,7 @@ function yapiKur(){
 
   koltukMesh = new THREE.InstancedMesh(SEAT_GEO, M('#ffffff'), Math.max(1, ACIK_KOLTUK.length));
   BAZ_KOLTUK = new Float32Array(ACIK_KOLTUK.length*3);
-  ACIK_KOLTUK.forEach((si,i) => { koltukMesh.setMatrixAt(i, mat(SX[si], SY[si], SZ[si], SR[si])); const c = bolumKoltukRengi(BOLUMLER[SB[si]], si); koltukMesh.setColorAt(i, c); c.toArray(BAZ_KOLTUK, i*3); });
+  ACIK_KOLTUK.forEach((si,i) => { const lk = BOLUMLER[SB[si]].loca ? 1.15 : 1; koltukMesh.setMatrixAt(i, mat(SX[si], SY[si], SZ[si], SR[si], lk, lk, 1.1)); const c = bolumKoltukRengi(BOLUMLER[SB[si]], si); koltukMesh.setColorAt(i, c); c.toArray(BAZ_KOLTUK, i*3); });
   koltukMesh.count = ACIK_KOLTUK.length; scene.add(koltukMesh);
 
   govdeMesh = new THREE.InstancedMesh(GOVDE_GEO, M('#ffffff'), Math.max(1, n));
@@ -1109,35 +1140,41 @@ function reelKamera(ad, sure){
     kose:   [new THREE.Vector3(-170, 70, 160), new THREE.Vector3(0, 14, 0)],
     bati:   [new THREE.Vector3(Kb.mx - Kb.nx*150 + 60, 95, Kb.mz - Kb.nz*150 + 70), new THREE.Vector3(Kb.mx + 20, 10, Kb.mz)],
     loca:   [new THREE.Vector3(Kl.mx - Kl.nx*15, KORIDOR_Y + 4, Kl.mz - Kl.nz*15), new THREE.Vector3(Kl.mx, KORIDOR_Y + 1, Kl.mz)],
+    locaYan: [new THREE.Vector3(Kl.mx + Kl.ux*30 - Kl.nx*7, KORIDOR_Y + 2.6, Kl.mz + Kl.uz*30 - Kl.nz*7), new THREE.Vector3(Kl.mx + Kl.ux*6, KORIDOR_Y + 1.2, Kl.mz + Kl.uz*6)],
     locaYakin: (() => { const si = REEL_DURUM.si, n = NRM[4]; return [new THREE.Vector3(SX[si] - n[0]*9 + 2, SY[si] + 2.6, SZ[si] - n[1]*9), new THREE.Vector3(SX[si], SY[si] + 1.1, SZ[si])]; })(),
   }[ad];
   if(sure === 0){ cam.position.copy(P[0]); ctl.target.copy(P[1]); ucus = null; } else uc(P[0], P[1], sure);
 }
 // Zamanlama: varsayılan (sessiz) ya da seslendirmenin kelime zamanlarından (?ses=ses/enes2 → ses/enes2.json)
-let RZ = { 'Bu stat':1.17, 've hâlâ':3.15, 'Stadımızın':4.38, 'Sen de':6.78, 'En çok':9.33, 'Ve her':12.54, 'Çünkü':14.47,
-           'Ama loca':18.78, 'Hadi':20.95, 'Sence':22.05, SON:24.4 };
+let RZ = { 'ama bir':4.14, 'Bu stadın hiç':6.3, 'Ve bu rengi':7.95, 'sen seçeceksin':9.87, 'Tuttuğun':11.12, 'En çok':13.39, 'Ve her':18.15,
+           'Çünkü':20.09, 'locada':23.9, 'Ama loca':26.77, 'Adın':30.03, 've bu stat':31.95, 'Takip et':34.92, 'Bakalım':37.24, SON:39.9 };
 const SES = url.get('ses');
 if(SES){ const h = await jsonAl(SES + '.json');
   if(h){ const ch = h.characters.join(''), st = h.character_start_times_seconds; const yeni = {};
     for(const k of Object.keys(RZ)) if(k !== 'SON'){ const i = ch.indexOf(k); if(i >= 0) yeni[k] = st[i]; }
-    yeni.SON = h.character_end_times_seconds.at(-1) + .9; if(Object.keys(yeni).length > 7) RZ = { ...RZ, ...yeni }; } }
+    yeni.SON = h.character_end_times_seconds.at(-1) + .9; if(Object.keys(yeni).length > 10) RZ = { ...RZ, ...yeni }; } }
 // Renk döngüsü: konuşma boyunca stat iki renkli takım renkleri arasında döner
 const dongu = (aralik) => { REEL_DURUM.dongu = { t0:performance.now(), aralik }; REEL_DURUM.sonDongu = null; };
 const donguDur = () => { REEL_DURUM.dongu = null; REEL_DURUM.cip = null; };
 function reelPlanKur(){ const T = k => Math.max(0, RZ[k]);
   return [
-  [0.0,                  () => { reelKamera('zemin', 0); ctl.autoRotate = false; dongu(230); reelYaz('100.000 KİŞİLİK STAT'); }],
-  [T('Bu stat') + .45,   () => { donguDur(); renkUygula(null); reelKamera('yuksel', 2.4); }],
-  [T('ve hâlâ'),         () => reelYaz('100.000 KİŞİLİK STAT', '…ve hâlâ rengi yok 😶')],
-  [T('Stadımızın') - .1, () => { reelKamera('kus', 1.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.3; dongu(1100); reelYaz('STADIN RENGİNİ BİRLİKTE SEÇİYORUZ'); }],
-  [T('Sen de') - .1,     () => { reelKamera('bati', 2.6); ctl.autoRotate = false; reelYaz('TUTTUĞUN TAKIMI YORUMA YAZ ✍️', '', true); }],
-  [T('En çok') - .1,     () => { reelKamera('kose', 2.6); reelYaz('EN ÇOK YORUM ALAN', 'renkleri bu stadı süslesin'); }],
-  [T('Ve her') - .1,     () => { reelKamera('kus', 1.6); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.6; reelYaz('HER YORUM BİR ŞANS 🎟️', '', true); }],
-  [T('Çünkü') - .1,      () => { ctl.autoRotate = false; reelKamera('loca', 1.8); reelYaz('YORUM AT', 'LOCADA 1 KOLTUK SENİN 🥂'); }],
-  [T('Ama loca') - .15,  () => { reelKamera('locaYakin', 1.4); REEL_DURUM.isim.visible = true; reelYaz('LOCA 1.000 KİŞİLİK', 'ilk gelen alır ⏳', true); }],
-  [T('Hadi') - .1,       () => { REEL_DURUM.isim.visible = false; reelKamera('kus', 1.4); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('TAKIMINI YAZ 👇', '@' + AYAR.hesap); }],
-  [T('Sence') - .1,      () => { dongu(230); reelYaz('SENCE HANGİ RENKLER KAZANIR?', '', true); }],
-  [T('SON'),             () => { donguDur(); if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
+  [0.0,                     () => { reelKamera('zemin', 0); ctl.autoRotate = false; dongu(230); reelYaz('GÜN 1', '100.000 kişilik dev bir stat', true); }],
+  [T('ama bir') - .1,       () => { donguDur(); renkUygula(null); reelKamera('yuksel', 2.6); reelYaz('AMA BİR SORUN VAR…'); }],
+  [T('Bu stadın hiç') - .1, () => reelYaz('BU STADIN HİÇ RENGİ YOK 😶')],
+  [T('Ve bu rengi') - .1,   () => { reelKamera('kus', 1.4); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.3; reelYaz('BU RENGİ…'); }],
+  [T('sen seçeceksin') - .1,() => { dongu(1100); reelYaz('SEN SEÇECEKSİN 🫵', '', true); }],
+  [T('Tuttuğun') - .1,      () => { ctl.autoRotate = false; reelKamera('bati', 2.4); reelYaz('TUTTUĞUN TAKIMI YORUMA YAZ ✍️', '', true); }],
+  [T('En çok') - .1,        () => { reelKamera('kose', 2.4); reelYaz('EN ÇOK YORUM ALAN KAZANIR', 'renkleri 100.000 koltuğa işlenir'); }],
+  [T('En çok') + 2.4,       () => { reelKamera('kus', 2.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.1; }],
+  [T('Ve her') - .1,        () => { ctl.autoRotateSpeed = 1.8; reelYaz('HER YORUM BİR ŞANS 🎟️', '', true); }],
+  [T('Çünkü') - .1,         () => { ctl.autoRotate = false; reelKamera('loca', 2); reelYaz('YORUM AT', 'VIP LOCADA 1 KOLTUK SENİN 🥂'); }],
+  [T('locada') - .1,        () => reelKamera('locaYan', 2.6)],
+  [T('Ama loca') - .15,     () => { reelKamera('locaYakin', 1.6); REEL_DURUM.isim.visible = true; reelYaz('LOCA SADECE 1.000 KİŞİLİK', 'ilk gelen alır ⏳', true); }],
+  [T('Adın') - .1,          () => reelYaz('ADIN KOLTUĞA YAZILIR ✨')],
+  [T('ve bu stat') - .1,    () => { REEL_DURUM.isim.visible = false; reelKamera('kose', 2.6); reelYaz('BU STAT ARTIK', 'SENİN DE STADIN 🏟️'); }],
+  [T('Takip et') - .1,      () => { reelKamera('kus', 1.6); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('TAKİP ET + TAKIMINI YAZ 👇', '@' + AYAR.hesap, true); }],
+  [T('Bakalım') - .1,       () => { dongu(230); reelYaz('HANGİ RENKLER KAZANACAK?', '', true); }],
+  [T('SON'),                () => { donguDur(); if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
   ].sort((a,b) => a[0]-b[0]); }
 const REEL_PLAN = reelPlanKur();
 function reelBaslat(){
@@ -1237,7 +1274,7 @@ function reelYaziCiz(x, W, H){
   if(y.alt){ x.font = '900 54px system-ui'; const yy = sat.length*fs*1.05 - fs*.2; x.lineWidth = 10; x.strokeStyle = '#000'; x.strokeText(y.alt, 0, yy); x.fillStyle = '#fff'; x.fillText(y.alt, 0, yy); }
   x.restore();
 }
-window.__reelKaydet = reelKaydet;
+window.__reelKaydet = reelKaydet; window.__reelKamera = reelKamera;
 
 const saat = new THREE.Clock(); let ekranZ = 0;
 function kare(sabitDt){
