@@ -1335,6 +1335,25 @@ function reelYaziCiz(x, W, H){
   x.restore();
 }
 window.__reelKaydet = reelKaydet; window.__reelKamera = reelKamera;
+// Kapak görseli: videonun t. saniyesindeki kare, isteğe bağlı başlıkla (1080×1920 PNG)
+window.__kapak = async (t, b, alt, vurgu, hedefUrl) => {
+  await Promise.all([document.fonts.load('96px Anton'), document.fonts.load('900 30px Inter')]).catch(()=>{});
+  const W = 1080, H = 1920, SS = 2; renderer.setPixelRatio(1); renderer.setSize(W*SS, H*SS, false); cam.aspect = W/H; cam.updateProjectionMatrix();
+  window.__SANAL = 1000; REEL_DURUM.bas = 1000; REEL_DURUM.acik = true; REEL_DURUM.adim = 0;
+  for(let i=0; i<=Math.round(t*30); i++){ window.__SANAL = 1000 + i*1000/30; kare(1/30); }
+  if(b !== undefined){ REEL_DURUM.yazi = { b, alt, vurgu }; REEL_DURUM.yaziT = -1e9; }
+  if(window.__kapakKamera){ const [p, h] = window.__kapakKamera; cam.position.set(...p); ctl.target.set(...h); ucus = null; ctl.autoRotate = false; ctl.update(); }
+  if(window.__mozaik){   // her tribün farklı bir adayın iki renginde (tarafsız kapak)
+    REEL_DURUM.dongu = null; REEL_DURUM.cip = null; renkUygula(null); const kc = koltukMesh.instanceColor.array;
+    ACIK_KOLTUK.forEach((si, i) => { const bl = BOLUMLER[SB[si]], d = ADAYLAR[(bl.kenar ?? 0) % ADAYLAR.length];
+      const ikinci = !bl.loca && (Math.floor((SSIRA[si]-1)/5) + (bl.kat === 1 ? 0 : 1)) % 2 === 1;
+      const c = bl.loca ? C('#1c1b20') : C(ikinci ? d.ikinci : d.ana); if(ikinci && c.getHSL({}).l > .85) c.multiplyScalar(.9); c.toArray(kc, i*3); });
+    koltukMesh.instanceColor.needsUpdate = true; }
+  const kayitBas = REEL_DURUM.acik; REEL_DURUM.acik = false;   // kapakta altyazı yok
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  renderer.render(scene, cam); x.imageSmoothingQuality = 'high'; x.drawImage(renderer.domElement, 0, 0, W, H); reelYaziCiz(x, W, H); REEL_DURUM.acik = kayitBas;
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png')); if(hedefUrl) await fetch(hedefUrl, { method:'POST', body:blob }); return blob.size;
+};
 
 const saat = new THREE.Clock(); let ekranZ = 0;
 function kare(sabitDt){
