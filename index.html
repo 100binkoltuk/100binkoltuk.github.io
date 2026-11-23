@@ -710,19 +710,20 @@ function yapiKur(){
   for(let f=0; f<n; f++){ FAN_KOLTUK[f] = ACIK_KOLTUK[f]; KOLTUK_FAN[ACIK_KOLTUK[f]] = f; }
   TASAN = TARAFTAR.length - n;
 
-  koltukMesh = new THREE.InstancedMesh(SEAT_GEO, M('#ffffff'), Math.max(1, ACIK_KOLTUK.length));
+  koltukMesh = new THREE.InstancedMesh(SEAT_GEO, new THREE.MeshBasicMaterial({ color:'#ffffff' }), Math.max(1, ACIK_KOLTUK.length));
   BAZ_KOLTUK = new Float32Array(ACIK_KOLTUK.length*3);
   ACIK_KOLTUK.forEach((si,i) => { const lk = BOLUMLER[SB[si]].loca ? 1.15 : 1; koltukMesh.setMatrixAt(i, mat(SX[si], SY[si], SZ[si], SR[si], lk, lk, 1.1)); const c = bolumKoltukRengi(BOLUMLER[SB[si]], si); koltukMesh.setColorAt(i, c); c.toArray(BAZ_KOLTUK, i*3); });
   koltukMesh.count = ACIK_KOLTUK.length; scene.add(koltukMesh);
 
-  govdeMesh = new THREE.InstancedMesh(GOVDE_GEO, M('#ffffff'), Math.max(1, n));
-  kafaMesh = new THREE.InstancedMesh(KAFA_GEO, M('#ffffff'), Math.max(1, n));
+  govdeMesh = new THREE.InstancedMesh(GOVDE_GEO, new THREE.MeshBasicMaterial({ color:'#ffffff' }), Math.max(1, n));
+  kafaMesh = new THREE.InstancedMesh(KAFA_GEO, new THREE.MeshBasicMaterial({ color:'#ffffff' }), Math.max(1, n));
   BAZ_GOVDE = new Float32Array(n*3); BAZ_KAFA = new Float32Array(n*3); FAN_ACI = new Float32Array(n); FAN_BAZY = new Float32Array(n);
   const tel = new Float32Array(n*3);
   for(let f=0; f<n; f++){ const si = FAN_KOLTUK[f], h = hashS(TARAFTAR[f].toLowerCase());
     const m = mat(SX[si], SY[si], SZ[si], SR[si]); govdeMesh.setMatrixAt(f, m); kafaMesh.setMatrixAt(f, m);
     const fc = KR.iki ? bolumKoltukRengi(BOLUMLER[SB[si]], si) : FORMA[h % FORMA.length], tc = TEN[(h>>>8) % TEN.length];
-    govdeMesh.setColorAt(f, fc); kafaMesh.setColorAt(f, tc); fc.toArray(BAZ_GOVDE, f*3); tc.toArray(BAZ_KAFA, f*3);
+    const kc = KR.iki ? fc : tc;   // renk seçildiyse taraftar baştan aşağı tribün renginde (koreografi)
+    govdeMesh.setColorAt(f, fc); kafaMesh.setColorAt(f, kc); fc.toArray(BAZ_GOVDE, f*3); kc.toArray(BAZ_KAFA, f*3);
     FAN_ACI[f] = Math.atan2(SZ[si], SX[si]); FAN_BAZY[f] = SY[si];
     tel[f*3] = SX[si]; tel[f*3+1] = SY[si] + 1.45; tel[f*3+2] = SZ[si]; }
   govdeMesh.count = kafaMesh.count = n;
@@ -1088,7 +1089,10 @@ function renkleriBoya(){
   if(koltukMesh?.instanceColor){ ACIK_KOLTUK.forEach((si,i) => bolumKoltukRengi(BOLUMLER[SB[si]], si).toArray(BAZ_KOLTUK, i*3));
     koltukMesh.instanceColor.array.set(BAZ_KOLTUK); koltukMesh.instanceColor.needsUpdate = true; }
   if(govdeMesh?.instanceColor){ for(let f=0; f<FAN_ACI.length; f++) (KR.iki ? bolumKoltukRengi(BOLUMLER[SB[FAN_KOLTUK[f]]], FAN_KOLTUK[f]) : FORMA[hashS(TARAFTAR[f].toLowerCase()) % FORMA.length]).toArray(BAZ_GOVDE, f*3);
-    govdeMesh.instanceColor.array.set(BAZ_GOVDE); govdeMesh.instanceColor.needsUpdate = true; }
+    govdeMesh.instanceColor.array.set(BAZ_GOVDE); govdeMesh.instanceColor.needsUpdate = true;
+    if(kafaMesh?.instanceColor){ for(let f=0; f<FAN_ACI.length; f++){ if(KR.iki){ BAZ_KAFA[f*3] = BAZ_GOVDE[f*3]; BAZ_KAFA[f*3+1] = BAZ_GOVDE[f*3+1]; BAZ_KAFA[f*3+2] = BAZ_GOVDE[f*3+2]; }
+      else TEN[(hashS(TARAFTAR[f].toLowerCase())>>>8) % TEN.length].toArray(BAZ_KAFA, f*3); }
+      kafaMesh.instanceColor.array.set(BAZ_KAFA); kafaMesh.instanceColor.needsUpdate = true; } }
   if(MOD.koreo) koreoUygula(true);
 }
 function bantGuncelle(){
@@ -1101,7 +1105,7 @@ function bantGuncelle(){
     h = `<small>🎨 STATIN RENGİ OYLANIYOR</small><b>${l ? `<span class="sw" style="${swatch(l)}"></span>Lider: ${esc(l.ad)}` : 'Yorumlara takımını yaz!'}</b>
       <small>${l && OY_TOPLAM ? '%' + Math.round(l.oy/OY_TOPLAM*100) + ' · ' + fmt(OY_TOPLAM) + ' oy · ' : ''}En çok yorum alan renkler stada işlenir</small>`; }
   if(!h && !KARAR.stadAdi && /ad/i.test(KARAR.siradaki || '') && !/renk/i.test(KARAR.siradaki || ''))
-    h = `<small>🏟️ GÜN 2 · STADIN ADI OYLANIYOR</small><b>Adını sen koy!</b><small>İsmini 🗳️ menüsünden dev tabelada dene</small>`;
+    h = `<small>🏟️ GÜN 2 · STADIN ADI OYLANIYOR</small><b>Adını sen koy!</b><small>🥂 VIP LOCA <b style="display:inline;font-size:inherit;color:var(--vurgu)">${fmt(Math.min(TARAFTAR.length, LOCA_KAP))} / ${fmt(LOCA_KAP)}</b> · hızla doluyor · yorum at, yerini al</small>`;
   el.style.display = h ? 'block' : 'none'; ic.innerHTML = h;
 }
 function renkTuru(ac){
@@ -1289,8 +1293,8 @@ function reelKamera(ad, sure){
 // Zamanlama: seslendirmenin kelime zamanlarından (?ses=ses/ozgur5 → ses/ozgur5.json); yoksa varsayılan
 const REEL_TIP = url.get('reel') === 'isim' ? 'isim' : 'renk';
 let RZ = REEL_TIP === 'isim'
-  ? { 'Üç yüz':1.31, 'Yeşil-beyaz':4.24, 'sarı-kırmızı ikinci':6.06, 'ama birinci':7.74, 'siyah-beyaz!':9.33, 'Arkadaşlar':10.66, 'Yüz bin':12.86, 'Ama dur':16.37,
-      'Bu stadın hâlâ':17.74, 'Ve o adı':19.63, 'Yorumlara':22.05, 'en çok':23.63, 'Siteye':27.75, 'Hadi':32.73, KONUSMA_SON:35.21 }
+  ? { 'Üç yüz':1.33, 'Yeşil-beyaz':3.71, 'sarı-kırmızı ikinci':5.34, 'ama birinci':6.94, 'siyah-beyaz!':8.7, 'Arkadaşlar':9.92, 'Yüz bin':11.98, 'Bu arada':15.95,
+      'loca hızla':18.32, 'Takip et':20.11, 'Ama dur':23.24, 'Bu stadın hâlâ':24.85, 'Ve o adı':26.75, 'Yorumlara':28.92, 'en çok':30.37, 'Hadi':33.71, KONUSMA_SON:36.24 }
   : { 'Yüz bin':1.32, 've hiç':2.75, 'Adı yok':4.59, 'forması':5.58, 'arması':6.54, 've hepsine':7.79, 'İlk karar':10.08, 'Tuttuğun':12.28,
       'En çok':14.56, 'Ve her':18.63, 'Yorum atan':20.12, 'Ama loca':25.17, 'İlk gelen':27.07, 'Takip et':29.16, 'çünkü burası':30.93, KONUSMA_SON:32.8 };
 const SES = url.get('ses'); let KELIMELER = [];
@@ -1312,14 +1316,15 @@ const PARCALAR = []; { let p = [];
 const dongu = (aralik) => { REEL_DURUM.dongu = { t0:performance.now(), aralik }; REEL_DURUM.sonDongu = null; };
 const donguDur = () => { REEL_DURUM.dongu = null; REEL_DURUM.cip = null; };
 function reelKalabalik(ac, isik = true){   // 100.000 taraftar (+ isteğe bağlı ışık şovu)
-  TARAFTAR = ac ? demoIsimler(100000) : taraftarHazirla(HAM); yapiKur(); isikSovu(ac && isik); if(ac) telefonNokta.material.size = 1.3; }
+  const gercek = taraftarHazirla(HAM); TARAFTAR = ac ? [...gercek, ...demoIsimler(100000 - gercek.length)] : gercek; yapiKur(); isikSovu(ac && isik); if(ac) telefonNokta.material.size = 1.3; }
 const GRI = { ad:'Gri', ana:'#8d939e', ikinci:'#8d939e' };
 const ORNEK_ISIMLER = ['Kartal Yuvası Arena', 'Siyah Beyaz Kale', '100K Park', 'Dev Tribün Arena', 'Yıldızlar Stadı'];
 function isimDongu(aralik){ REEL_DURUM.isimDongu = aralik ? { t0:performance.now(), aralik } : null; if(!aralik){ ISIM_ONIZLEME = null; tabelaCiz(); } }
+const REEL_GERCEK = taraftarHazirla(HAM).length;
 function reelPlanIsim(){ const T = k => Math.max(0, RZ[k]), sira = [...ADAYLAR].sort((a,b) => b.oy - a.oy), kaz = sira[0];
   const tablo = n => { REEL_DURUM.tablo = { n, t:performance.now() }; };
   return [
-  [0.0,                     () => { if(REEL_DURUM.kalabalik){ REEL_DURUM.kalabalik = false; reelKalabalik(false); } isimDongu(0); REEL_DURUM.tablo = null; REEL_DURUM.kart = false; DESEN = 'dikey';
+  [0.0,                     () => { REEL_DURUM.locaIsim = null; if(REEL_DURUM.kalabalik){ REEL_DURUM.kalabalik = false; reelKalabalik(false); } isimDongu(0); REEL_DURUM.tablo = null; REEL_DURUM.kart = false; DESEN = 'dikey';
                                     reelKamera('zemin', 0); ctl.autoRotate = false; donguDur(); renkUygula(GRI); reelYaz('SAYIM BİTTİ!', '364 YORUM GELDİ'); }],
   [T('Üç yüz') + .3,        () => { reelKamera('yuksel', 2.4); tablo(0); }],
   [T('Yeşil-beyaz') - .1,   () => { tablo(1); renkUygula(sira[2]); reelYaz('3. ' + sira[2].ad.toLocaleUpperCase('tr-TR'), ''); }],
@@ -1330,12 +1335,16 @@ function reelPlanIsim(){ const T = k => Math.max(0, RZ[k]), sira = [...ADAYLAR].
   [T('Arkadaşlar') - .1,    () => { REEL_DURUM.tablo = null; reelKamera('zemin', 1.4); ctl.autoRotateSpeed = 6; reelYaz('ŞU STADA BAKIN! 🤯', ''); }],
   [T('Yüz bin') - .1,       () => { reelKamera('kus', 2.2); ctl.autoRotateSpeed = 1.6; reelYaz('100.000 KOLTUK', 'BAŞTAN AŞAĞI ' + kaz.ad.toLocaleUpperCase('tr-TR'), true); }],
   [T('Yüz bin') + 2.2,      () => reelKamera('kose', 1.6)],
-  [T('Ama dur') - .1,       () => { ctl.autoRotate = false; reelKamera('tabela', 2.2); reelYaz('AMA DUR…', 'DAHA BİTMEDİ'); }],
+  [T('Bu arada') - .1,      () => { ctl.autoRotate = false; reelKamera('loca', 2); REEL_DURUM.locaIsim = { t0:performance.now() + 900 }; reelYaz('LOCA SAHİPLERİ', 'YERİNİ ALDI 🥂', true); }],
+  [T('Bu arada') + 2.3,     () => reelKamera('locaYan', 3)],
+  [T('loca hızla') - .1,    () => reelYaz('VIP LOCA', fmt(Math.min(REEL_GERCEK, LOCA_KAP)) + ' / ' + fmt(LOCA_KAP) + ' · HIZLA DOLUYOR')],
+  [T('Takip et') - .1,      () => { reelKamera('locaYakin', 1.8); REEL_DURUM.isin.visible = true; reelYaz('TAKİP ET 🔔', 'LOCADAN HER KARARI İLK SEN GÖR', true); }],
+  [T('Ama dur') - .1,       () => { REEL_DURUM.isin.visible = false; REEL_DURUM.locaIsim = null; ctl.autoRotate = false; reelKamera('tabela', 2.2); reelYaz('AMA DUR…', 'DAHA BİTMEDİ'); }],
   [T('Bu stadın hâlâ') - .1,() => reelYaz('BU STADIN', 'HÂLÂ ADI YOK')],
   [T('Ve o adı') - .1,      () => reelYaz('O ADI', 'SEN KOYACAKSIN 🫵', true)],
   [T('Yorumlara') - .1,     () => { REEL_DURUM.kart = 'isim'; REEL_DURUM.kartT = performance.now(); reelYaz('YORUMLARA', 'İSİM YAZ'); }],
   [T('en çok') - .1,        () => { REEL_DURUM.kart = false; isimDongu(900); reelYaz('EN ÇOK BEĞENİ ALAN', 'DEV TABELAYA YAZILIR', true); }],
-  [T('Siteye') - .1,        () => { reelKamera('kus', 2.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('İSMİNİ TABELADA GÖR', '100BINKOLTUK.GITHUB.IO'); }],
+  [T('en çok') + 2.4,       () => { reelKamera('kus', 2.2); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('İSMİNİ TABELADA DENE', '100BINKOLTUK.GITHUB.IO'); }],
   [T('Hadi') - .1,          () => { isimDongu(0); ctl.autoRotate = false; reelKamera('tabela', 1.6); reelYaz('BU STADIN ADI', 'NE OLSUN? 👇', true); }],
   [T('KONUSMA_SON') + .2,   () => { isikSovu(true); reelKamera('kus', 2.6); ctl.autoRotate = true; ctl.autoRotateSpeed = 2; }],
   [T('SON'),                () => { if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
@@ -1476,6 +1485,16 @@ function reelYaziCiz(x, W, H){
   if(cp && !REEL_DURUM.kart){ x.font = `${54}px ${FONT_B}`; const t = cp.ad.toLocaleUpperCase('tr-TR'), tw = x.measureText(t).width, r = 24, w = tw + r*2 + 70, cy = H*.6;
     x.fillStyle = 'rgba(10,11,15,.82)'; yuvarlak(x, W/2 - w/2, cy - 42, w, 84, 42); x.fill(); cipCiz(x, W/2 - w/2 + 28 + r, cy, r, cp);
     x.fillStyle = '#fff'; x.textAlign = 'left'; x.fillText(t, W/2 - w/2 + 28 + r*2 + 18, cy + 3); }
+  // --- loca sahipleri: gerçek kullanıcı adları koltukların üstünde hızla belirir ---
+  if(REEL_DURUM.locaIsim && REEL_GERCEK){ const k = Math.min(REEL_GERCEK, Math.max(0, Math.floor((simdi - REEL_DURUM.locaIsim.t0)/70))), dolu = new Set(), v = new THREE.Vector3();
+    x.save(); x.font = `800 26px ${FONT_M}`; x.textAlign = 'center';
+    for(let f = k - 1; f >= 0; f--){ const si = FAN_KOLTUK[f]; if(si < 0) continue; v.set(SX[si], SY[si] + 1.5, SZ[si]).project(cam); if(v.z > 1 || Math.abs(v.x) > .95 || Math.abs(v.y) > .95) continue;
+      const px = (v.x*.5 + .5)*W, py = (-v.y*.5 + .5)*H; if(py < H*.36 || py > H*.72) continue;
+      const hucre = Math.round(px/230) + ':' + Math.round(py/52); if(dolu.has(hucre)) continue; dolu.add(hucre);
+      const yas = (simdi - REEL_DURUM.locaIsim.t0)/70 - f, a = Math.min(1, yas/3), t = '@' + TARAFTAR[f], w = x.measureText(t).width + 26;
+      x.globalAlpha = a; x.fillStyle = f >= k - 3 ? '#F2C14E' : 'rgba(232,199,102,.92)'; yuvarlak(x, px - w/2, py - 22 - (1-a)*14, w, 40, 20); x.fill();
+      x.fillStyle = '#16120a'; x.fillText(t, px, py - 1 - (1-a)*14); }
+    x.restore(); }
   // --- örnek yorum kartı ---
   if(REEL_DURUM.tablo){ const tb = REEL_DURUM.tablo, sira = [...ADAYLAR].sort((a,b) => b.oy - a.oy).slice(0,3), cw = 860, cx = W/2, cy0 = H*.42;
     x.save(); x.fillStyle = 'rgba(10,11,15,.9)'; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 30; yuvarlak(x, cx - cw/2, cy0, cw, 420, 28); x.fill(); x.shadowBlur = 0;
