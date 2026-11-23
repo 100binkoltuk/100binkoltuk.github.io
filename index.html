@@ -573,6 +573,7 @@ function renkTuret(){
   const a = C(AYAR.renk.ana), ik = C(AYAR.renk.ikinci);
   const ikT = ik.clone().multiplyScalar(ik.getHSL({}).l > .85 ? .9 : 1);   // saf beyaz koltuklar parlamasın
   KR = { k1:a.clone(), k1g:a.clone().multiplyScalar(.8), k2:a.clone().multiplyScalar(.92), k2g:a.clone().multiplyScalar(.74),
+         iv:ik.clone(), kv:a.clone().multiplyScalar(a.getHSL({}).l < .15 ? .55 : 1),   // şeritlerde tam parlak renk, siyah daha derin
          i1:ikT.clone(), i1g:ikT.clone().multiplyScalar(.85), i2:ikT.clone().multiplyScalar(.94), i2g:ikT.clone().multiplyScalar(.8),
          iki: !boyanmamis(), loca: C('#1c1b20') };   // loca: siyah deri koltuk (her renkte aynı, lüks görünüm)
   if(boyanmamis() && ADAYLAR.length){
@@ -590,7 +591,7 @@ const SERIT_GEN = 7.2;   // dikey şerit genişliği (m) ≈ 12 koltuk
 function bolumKoltukRengi(b, si){
   if(b.loca) return KR.loca.clone();
   if(KR.iki && DESEN === 'dikey'){ const ik = Math.floor((SU[si] + 1000 + SERIT_GEN/2) / SERIT_GEN) % 2 === 1, ust = b.kat === 2;
-    return (ik ? (ust ? KR.i2 : KR.i1) : (ust ? KR.k2 : KR.k1)).clone(); }
+    return (ik ? KR.iv : KR.kv).clone(); }
   if(KR.iki && DESEN === 'dama'){ const ik = (b.kenar + b.kat) % 2 === 1, ust = b.kat === 2;
     return (ik ? (ust ? KR.i2 : KR.i1) : (ust ? KR.k2 : KR.k1)).clone(); }
   const g = ((SSIRA[si]>>1) + b.kenar) % 7 === 0;
@@ -1326,9 +1327,8 @@ function reelPlanIsim(){ const T = k => Math.max(0, RZ[k]), sira = [...ADAYLAR].
   [T('ama birinci') - .1,   () => { renkUygula(GRI); dongu(150); reelKamera('kus', 1.6); reelYaz('VE BİRİNCİ…', ''); }],
   [T('siyah-beyaz!') - .05, () => { donguDur(); tablo(3); DESEN = 'dikey'; REEL_DURUM.kalabalik = true; reelKalabalik(true, false); renkUygula(kaz);
                                     ctl.autoRotate = true; ctl.autoRotateSpeed = 2.4; reelYaz(kaz.ad.toLocaleUpperCase('tr-TR') + '!', fmt(kaz.oy) + ' YORUMLA KAZANDI', true); }],
-  [T('Arkadaşlar') - .1,    () => { REEL_DURUM.tablo = null; reelKamera('zemin', 1.4); ctl.autoRotateSpeed = 6; desenAyarla('yatay'); reelYaz('ŞU STADA BAKIN! 🤯', ''); }],
-  [T('Arkadaşlar') + 1.1,   () => desenAyarla('dikey')],
-  [T('Yüz bin') - .1,       () => { desenAyarla('dama'); reelKamera('kus', 2.2); ctl.autoRotateSpeed = 1.6; reelYaz('100.000 KOLTUK', 'BAŞTAN AŞAĞI ' + kaz.ad.toLocaleUpperCase('tr-TR'), true); }],
+  [T('Arkadaşlar') - .1,    () => { REEL_DURUM.tablo = null; reelKamera('zemin', 1.4); ctl.autoRotateSpeed = 6; reelYaz('ŞU STADA BAKIN! 🤯', ''); }],
+  [T('Yüz bin') - .1,       () => { reelKamera('kus', 2.2); ctl.autoRotateSpeed = 1.6; reelYaz('100.000 KOLTUK', 'BAŞTAN AŞAĞI ' + kaz.ad.toLocaleUpperCase('tr-TR'), true); }],
   [T('Yüz bin') + 2.2,      () => reelKamera('kose', 1.6)],
   [T('Ama dur') - .1,       () => { ctl.autoRotate = false; reelKamera('tabela', 2.2); reelYaz('AMA DUR…', 'DAHA BİTMEDİ'); }],
   [T('Bu stadın hâlâ') - .1,() => reelYaz('BU STADIN', 'HÂLÂ ADI YOK')],
