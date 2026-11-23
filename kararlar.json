@@ -3,7 +3,8 @@
   "renk": {
    "ad": "Siyah-Beyaz",
    "ana": "#1A1A1A",
-   "ikinci": "#FFFFFF"
+   "ikinci": "#FFFFFF",
+   "desen": "dama"
   },
   "renkOylamasi": [
    {
