@@ -504,8 +504,8 @@ function tabelaCiz(){
   if(ad){ let fs = 230; const t = ad.toLocaleUpperCase('tr-TR'); x.font = `${fs}px Anton, Impact, sans-serif`; while(x.measureText(t).width > W - 160 && fs > 80){ fs -= 8; x.font = `${fs}px Anton, Impact, sans-serif`; }
     x.shadowColor = 'rgba(232,199,102,.6)'; x.shadowBlur = 30; x.fillStyle = altin; x.fillText(t, W/2, H/2 + 8); x.shadowBlur = 0;
     if(ISIM_ONIZLEME && !KARAR.stadAdi){ x.font = '900 34px Inter, system-ui'; x.fillStyle = '#F2C14E'; x.fillText('ÖNERİ · ÖNİZLEME', W/2, 58); } }
-  else { x.font = '120px Anton, Impact, sans-serif'; x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('BU STADIN ADI YOK', W/2, H/2 - 52);
-    x.font = '150px Anton, Impact, sans-serif'; x.shadowColor = 'rgba(232,199,102,.6)'; x.shadowBlur = 26; x.fillStyle = altin; x.fillText('ADINI SEN KOY', W/2, H/2 + 72); x.shadowBlur = 0; }
+  else { x.font = '84px Anton, Impact, sans-serif'; x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('BU STADIN ADI YOK', W/2, 100);
+    x.font = '150px Anton, Impact, sans-serif'; x.shadowColor = 'rgba(232,199,102,.6)'; x.shadowBlur = 26; x.fillStyle = altin; x.fillText('ADINI SEN KOY', W/2, 228); x.shadowBlur = 0; }
   tabelaTex.needsUpdate = true;
 }
 tabelaCiz(); document.fonts?.ready.then(tabelaCiz);
@@ -1091,6 +1091,8 @@ function bantGuncelle(){
   else if(boyanmamis()){ const l = OY_TOPLAM ? ADAYLAR[0] : null;
     h = `<small>🎨 STATIN RENGİ OYLANIYOR</small><b>${l ? `<span class="sw" style="${swatch(l)}"></span>Lider: ${esc(l.ad)}` : 'Yorumlara takımını yaz!'}</b>
       <small>${l && OY_TOPLAM ? '%' + Math.round(l.oy/OY_TOPLAM*100) + ' · ' + fmt(OY_TOPLAM) + ' oy · ' : ''}En çok yorum alan renkler stada işlenir</small>`; }
+  if(!h && !KARAR.stadAdi && /ad/i.test(KARAR.siradaki || '') && !/renk/i.test(KARAR.siradaki || ''))
+    h = `<small>🏟️ GÜN 2 · STADIN ADI OYLANIYOR</small><b>Adını sen koy!</b><small>İsmini 🗳️ menüsünden dev tabelada dene</small>`;
   el.style.display = h ? 'block' : 'none'; ic.innerHTML = h;
 }
 function renkTuru(ac){
@@ -1270,18 +1272,23 @@ function reelKamera(ad, sure){
     bati:   [new THREE.Vector3(Kb.mx - Kb.nx*150 + 60, 95, Kb.mz - Kb.nz*150 + 70), new THREE.Vector3(Kb.mx + 20, 10, Kb.mz)],
     loca:   [new THREE.Vector3(Kl.mx - Kl.nx*15, KORIDOR_Y + 4, Kl.mz - Kl.nz*15), new THREE.Vector3(Kl.mx, KORIDOR_Y + 1, Kl.mz)],
     locaYan: [new THREE.Vector3(Kl.mx + Kl.ux*30 - Kl.nx*7, KORIDOR_Y + 2.6, Kl.mz + Kl.uz*30 - Kl.nz*7), new THREE.Vector3(Kl.mx + Kl.ux*6, KORIDOR_Y + 1.2, Kl.mz + Kl.uz*6)],
+    tabela: [new THREE.Vector3(TABELA.K.mx - TABELA.K.nx*185 + 25, TABELA.y + 20, TABELA.K.mz - TABELA.K.nz*185), new THREE.Vector3(TABELA.K.mx, TABELA.y + 5, TABELA.K.mz)],
     locaYakin: (() => { const si = REEL_DURUM.si, n = NRM[4]; return [new THREE.Vector3(SX[si] - n[0]*9 + 2, SY[si] + 2.6, SZ[si] - n[1]*9), new THREE.Vector3(SX[si], SY[si] + 1.1, SZ[si])]; })(),
   }[ad];
   if(sure === 0){ cam.position.copy(P[0]); ctl.target.copy(P[1]); ucus = null; } else uc(P[0], P[1], sure);
 }
 // Zamanlama: seslendirmenin kelime zamanlarından (?ses=ses/ozgur5 → ses/ozgur5.json); yoksa varsayılan
-let RZ = { 'Yüz bin':1.32, 've hiç':2.75, 'Adı yok':4.59, 'forması':5.58, 'arması':6.54, 've hepsine':7.79, 'İlk karar':10.08, 'Tuttuğun':12.28,
-           'En çok':14.56, 'Ve her':18.63, 'Yorum atan':20.12, 'Ama loca':25.17, 'İlk gelen':27.07, 'Takip et':29.16, 'çünkü burası':30.93, KONUSMA_SON:32.8 };
+const REEL_TIP = url.get('reel') === 'isim' ? 'isim' : 'renk';
+let RZ = REEL_TIP === 'isim'
+  ? { 'Tam üç':1.13, 'Üçüncü':3.44, 'ikinci':5.89, 've bu stadın renkleri':7.95, 'siyah-beyaz!':9.9, 'Yüz bin':11.41, 'Ama bir':13.94, 'Gün iki':18.36,
+      'Yorumlara':21.92, 'en çok':23.49, 'Sitede':27.08, 'Hadi':32.17, KONUSMA_SON:33.76 }
+  : { 'Yüz bin':1.32, 've hiç':2.75, 'Adı yok':4.59, 'forması':5.58, 'arması':6.54, 've hepsine':7.79, 'İlk karar':10.08, 'Tuttuğun':12.28,
+      'En çok':14.56, 'Ve her':18.63, 'Yorum atan':20.12, 'Ama loca':25.17, 'İlk gelen':27.07, 'Takip et':29.16, 'çünkü burası':30.93, KONUSMA_SON:32.8 };
 const SES = url.get('ses'); let KELIMELER = [];
 if(SES){ const h = await jsonAl(SES + '.json');
   if(h){ const ch = h.characters, st = h.character_start_times_seconds, en = h.character_end_times_seconds, metin = ch.join(''), yeni = {};
     for(const k of Object.keys(RZ)) if(k !== 'KONUSMA_SON'){ const i = metin.indexOf(k); if(i >= 0) yeni[k] = st[i]; }
-    yeni.KONUSMA_SON = en.at(-1); if(Object.keys(yeni).length > 10) RZ = { ...RZ, ...yeni };
+    yeni.KONUSMA_SON = en.at(-1); if(Object.keys(yeni).length >= Object.keys(RZ).length - 2) RZ = { ...RZ, ...yeni };
     // altyazı: [etiket]leri at, kelimelere böl
     let i = 0, cur = null;
     while(i < ch.length){ if(ch[i] === '['){ while(i < ch.length && ch[i] !== ']') i++; i++; continue; }
@@ -1297,7 +1304,30 @@ const dongu = (aralik) => { REEL_DURUM.dongu = { t0:performance.now(), aralik };
 const donguDur = () => { REEL_DURUM.dongu = null; REEL_DURUM.cip = null; };
 function reelKalabalik(ac){   // final: 100.000 taraftar + ışık şovu (hayal sahnesi)
   TARAFTAR = ac ? demoIsimler(100000) : taraftarHazirla(HAM); yapiKur(); isikSovu(ac); if(ac) telefonNokta.material.size = 1.3; }
-function reelPlanKur(){ const T = k => Math.max(0, RZ[k]);
+const GRI = { ad:'Gri', ana:'#8d939e', ikinci:'#8d939e' };
+const ORNEK_ISIMLER = ['Kartal Yuvası Arena', 'Siyah Beyaz Kale', '100K Park', 'Dev Tribün Arena', 'Yıldızlar Stadı'];
+function isimDongu(aralik){ REEL_DURUM.isimDongu = aralik ? { t0:performance.now(), aralik } : null; if(!aralik){ ISIM_ONIZLEME = null; tabelaCiz(); } }
+function reelPlanIsim(){ const T = k => Math.max(0, RZ[k]), sira = [...ADAYLAR].sort((a,b) => b.oy - a.oy), kaz = sira[0];
+  const tablo = n => { REEL_DURUM.tablo = { n, t:performance.now() }; };
+  return [
+  [0.0,                    () => { if(REEL_DURUM.kalabalik){ REEL_DURUM.kalabalik = false; reelKalabalik(false); } isimDongu(0); REEL_DURUM.tablo = null; REEL_DURUM.kart = false;
+                                   reelKamera('zemin', 0); ctl.autoRotate = false; donguDur(); renkUygula(GRI); reelYaz('SAYIM BİTTİ!', '364 YORUM GELDİ'); }],
+  [T('Tam üç') + .4,       () => { reelKamera('yuksel', 2.4); tablo(0); }],
+  [T('Üçüncü') - .1,       () => { tablo(1); renkUygula(sira[2]); reelYaz('3. ' + sira[2].ad.toLocaleUpperCase('tr-TR'), ''); }],
+  [T('ikinci') - .1,       () => { tablo(2); renkUygula(sira[1]); reelYaz('2. ' + sira[1].ad.toLocaleUpperCase('tr-TR'), ''); }],
+  [T('ve bu stadın renkleri') - .1, () => { renkUygula(GRI); dongu(160); reelKamera('kus', 2); reelYaz('VE KAZANAN…', ''); }],
+  [T('siyah-beyaz!') - .05,() => { donguDur(); tablo(3); renkUygula(kaz); REEL_DURUM.kalabalik = true; reelKalabalik(true); ctl.autoRotate = true; ctl.autoRotateSpeed = 2;
+                                   reelYaz(kaz.ad.toLocaleUpperCase('tr-TR') + '!', fmt(kaz.oy) + ' YORUMLA KAZANDI', true); }],
+  [T('Yüz bin') - .1,      () => { REEL_DURUM.tablo = null; reelYaz('100.000 KOLTUK', 'ARTIK ' + kaz.ad.toLocaleUpperCase('tr-TR'), true); }],
+  [T('Ama bir') - .1,      () => { isikSovu(false); ctl.autoRotate = false; reelKamera('tabela', 2.6); reelYaz('AMA…', 'BU STADIN ADI YOK'); }],
+  [T('Gün iki') - .1,      () => reelYaz('GÜN 2', 'ADINI SEN KOY', true)],
+  [T('Yorumlara') - .1,    () => { REEL_DURUM.kart = 'isim'; REEL_DURUM.kartT = performance.now(); reelYaz('YORUMLARA', 'İSİM YAZ'); }],
+  [T('en çok') - .1,       () => { REEL_DURUM.kart = false; isimDongu(900); reelYaz('EN ÇOK BEĞENİ ALAN', 'DEV TABELAYA YAZILIR', true); }],
+  [T('Sitede') - .1,       () => { reelKamera('kus', 2.4); ctl.autoRotate = true; ctl.autoRotateSpeed = 1.2; reelYaz('İSMİNİ TABELADA DENE', '100BINKOLTUK.GITHUB.IO'); }],
+  [T('Hadi') - .1,         () => { isimDongu(0); reelKamera('tabela', 1.6); ctl.autoRotate = false; reelYaz('BU STADIN ADI', 'NE OLSUN? 👇', true); }],
+  [T('SON'),               () => { if(REEL_DURUM.ses){ REEL_DURUM.ses.currentTime = 0; REEL_DURUM.ses.play(); } REEL_DURUM.bas = performance.now(); REEL_DURUM.adim = 0; }],
+  ].sort((a,b) => a[0]-b[0]); }
+function reelPlanKur(){ if(REEL_TIP === 'isim') return reelPlanIsim(); const T = k => Math.max(0, RZ[k]);
   return [
   [0.0,                    () => { if(REEL_DURUM.kalabalik){ REEL_DURUM.kalabalik = false; reelKalabalik(false); } reelKamera('zemin', 0); ctl.autoRotate = false; dongu(230); REEL_DURUM.kart = false; REEL_DURUM.isin.visible = false; reelYaz('BU STAT', 'BOMBOŞ'); }],
   [T('Yüz bin') - .1,      () => { donguDur(); renkUygula(null); reelKamera('yuksel', 2.6); reelYaz('100.000 KOLTUK', ''); }],
@@ -1353,6 +1383,8 @@ function reelAdim(simdi){
   const dg = REEL_DURUM.dongu;
   if(dg && ADAYLAR.length){ const d = ADAYLAR[Math.floor((simdi - dg.t0)/dg.aralik) % ADAYLAR.length];
     if(d !== REEL_DURUM.sonDongu){ REEL_DURUM.sonDongu = d; renkUygula(d); REEL_DURUM.cip = dg.aralik > 500 ? d : null; } }
+  const idg = REEL_DURUM.isimDongu;
+  if(idg){ const ad = ORNEK_ISIMLER[Math.floor((simdi - idg.t0)/idg.aralik) % ORNEK_ISIMLER.length]; if(ad !== ISIM_ONIZLEME){ ISIM_ONIZLEME = ad; tabelaCiz(); } }
   if(REEL_DURUM.isin?.visible){ const s = 1 + .25*Math.sin(simdi/160); REEL_DURUM.isin.children[1].scale.setScalar(s); }
 }
 if(REEL) reelBaslat();
@@ -1409,7 +1441,7 @@ function reelYaziCiz(x, W, H){
   const simdi = performance.now(), sn = REEL_DURUM.acik ? (simdi - REEL_DURUM.bas)/1000 : 0;
   x.save(); x.textBaseline = 'middle';
   // --- üst bant: GÜN 1 · İLK KARAR ---
-  { const y = H*.062; x.font = `900 30px ${FONT_M}`; const t1 = 'GÜN 1', t2 = 'İLK KARAR · TAKIMINI YORUMLARA YAZ 👇';
+  { const y = H*.062; x.font = `900 30px ${FONT_M}`; const t1 = REEL_TIP === 'isim' ? 'GÜN 2' : 'GÜN 1', t2 = REEL_TIP === 'isim' ? 'KARAR: STADIN ADI · YORUMLARA YAZ 👇' : 'İLK KARAR · TAKIMINI YORUMLARA YAZ 👇';
     const w1 = x.measureText(t1).width + 34, w2 = x.measureText(t2).width + 34, top = w1 + 10 + w2, x0 = W/2 - top/2;
     x.fillStyle = '#F2C14E'; yuvarlak(x, x0, y - 27, w1, 54, 10); x.fill(); x.fillStyle = '#16120a'; x.textAlign = 'center'; x.fillText(t1, x0 + w1/2, y + 2);
     x.fillStyle = '#D7262E'; yuvarlak(x, x0 + w1 + 10, y - 27, w2, 54, 10); x.fill(); x.fillStyle = '#fff'; x.fillText(t2, x0 + w1 + 10 + w2/2, y + 2);
@@ -1432,11 +1464,22 @@ function reelYaziCiz(x, W, H){
     x.fillStyle = 'rgba(10,11,15,.82)'; yuvarlak(x, W/2 - w/2, cy - 42, w, 84, 42); x.fill(); cipCiz(x, W/2 - w/2 + 28 + r, cy, r, cp);
     x.fillStyle = '#fff'; x.textAlign = 'left'; x.fillText(t, W/2 - w/2 + 28 + r*2 + 18, cy + 3); }
   // --- örnek yorum kartı ---
+  if(REEL_DURUM.tablo){ const tb = REEL_DURUM.tablo, sira = [...ADAYLAR].sort((a,b) => b.oy - a.oy).slice(0,3), cw = 860, cx = W/2, cy0 = H*.42;
+    x.save(); x.fillStyle = 'rgba(10,11,15,.9)'; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 30; yuvarlak(x, cx - cw/2, cy0, cw, 420, 28); x.fill(); x.shadowBlur = 0;
+    x.textAlign = 'center'; x.font = `56px ${FONT_B}`; x.fillStyle = '#F2C14E'; x.fillText('📊 SONUÇLAR', cx, cy0 + 58);
+    [2, 1, 0].forEach((i, k) => { const d = sira[i], ry = cy0 + 140 + i*100, acik = tb.n >= k + 1;
+      const kk = acik ? Math.min(1, (simdi - tb.t)/600 + (tb.n > k + 1 ? 1 : 0)) : 0;
+      x.globalAlpha = acik ? 1 : .35; x.textAlign = 'left'; x.font = `64px ${FONT_B}`; x.fillStyle = i === 0 ? '#F2C14E' : '#fff'; x.fillText((i+1) + '.', cx - cw/2 + 40, ry);
+      if(acik){ cipCiz(x, cx - cw/2 + 140, ry - 4, 30, d); x.font = `58px ${FONT_B}`; x.fillStyle = '#fff'; x.fillText(d.ad.toLocaleUpperCase('tr-TR'), cx - cw/2 + 190, ry);
+        x.textAlign = 'right'; x.fillStyle = i === 0 ? '#F2C14E' : '#fff'; x.fillText(fmt(Math.round(d.oy * kk)), cx + cw/2 - 40, ry); }
+      else { x.font = `58px ${FONT_B}`; x.fillStyle = '#fff'; x.fillText('???', cx - cw/2 + 140, ry); } });
+    x.restore(); }
   if(REEL_DURUM.kart){ const kk = Math.min(1, (simdi - REEL_DURUM.kartT)/350), cx = W/2, cw = 880, ch = 430, cy0 = H*.44 + (1-kk)*60;
     x.save(); x.globalAlpha = kk; x.fillStyle = 'rgba(14,15,20,.93)'; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 30; yuvarlak(x, cx - cw/2, cy0, cw, ch, 28); x.fill(); x.shadowBlur = 0;
     x.textAlign = 'left'; x.font = `900 32px ${FONT_M}`; x.fillStyle = '#fff'; x.fillText('Yorumlar', cx - cw/2 + 36, cy0 + 48);
     x.fillStyle = '#F2C14E'; yuvarlak(x, cx - cw/2 + 200, cy0 + 30, 108, 38, 8); x.fill(); x.fillStyle = '#16120a'; x.font = `900 22px ${FONT_M}`; x.fillText('ÖRNEK', cx - cw/2 + 218, cy0 + 50);
-    const ornek = [['ali_1905', 'Galatasaray 💛❤️', 'Sarı-Kırmızı'], ['mert.fb07', 'Fenerbahçe 💛💙', 'Sarı-Lacivert'], ['ece_bjk', 'Beşiktaş 🖤🤍', 'Siyah-Beyaz']];
+    const ornek = REEL_DURUM.kart === 'isim' ? [['kartal_34', 'Kartal Yuvası Arena 🏟️', 'Siyah-Beyaz'], ['tribun.ece', 'Siyah Beyaz Kale 🖤🤍', 'Siyah-Beyaz'], ['mert_06', '100K Park ⚽', 'Siyah-Beyaz']]
+      : [['ali_1905', 'Galatasaray 💛❤️', 'Sarı-Kırmızı'], ['mert.fb07', 'Fenerbahçe 💛💙', 'Sarı-Lacivert'], ['ece_bjk', 'Beşiktaş 🖤🤍', 'Siyah-Beyaz']];
     ornek.forEach(([u, m, ad], i) => { const ry = cy0 + 120 + i*100, d = aday(ad), gor = Math.min(1, Math.max(0, (simdi - REEL_DURUM.kartT)/1000 - .25 - i*.45)*3);
       x.globalAlpha = kk*gor; cipCiz(x, cx - cw/2 + 70, ry + 10, 30, d);
       x.font = `800 25px ${FONT_M}`; x.fillStyle = 'rgba(255,255,255,.65)'; x.fillText('@' + u, cx - cw/2 + 122, ry - 8);
