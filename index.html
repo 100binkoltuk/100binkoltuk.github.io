@@ -1164,17 +1164,18 @@ function durumUrl(){ const u = new URL(location.href); ['acik','insaat','otomati
 /* ---- Renk sayımı ---- */
 const katla = s => trK(s).replace(/[çğıöşü]/g, c => ({ç:'c',ğ:'g',ı:'i',ö:'o',ş:'s',ü:'u'}[c]));
 const VARSAYILAN_ANAHTAR = {
-  'Sarı-Kırmızı':  ['galatasaray','gs','cimbom','cim bom','ultraslan','aslan','goztepe','kayserispor','kayseri','sari kirmizi','sarikirmizi'],
+  'Sarı-Kırmızı':  ['galatasaray','galatasarat','galatasara','qalatasaray','galatasray','gs','cimbom','cim bom','ultraslan','aslan','goztepe','kayserispor','kayseri','sari kirmizi','sarikirmizi'],
   'Sarı-Lacivert': ['fenerbahce','fener','fb','kanarya','ankaragucu','sari lacivert','sarilacivert'],
-  'Siyah-Beyaz':   ['besiktas','bjk','kartal','carsi','altay','siyah beyaz','siyahbeyaz'],
+  'Siyah-Beyaz':   ['besiktas','besktas','bjk','kartal','carsi','altay','siyah beyaz','siyahbeyaz'],
   'Kırmızı-Beyaz': ['antalyaspor','antalya','samsunspor','samsun','sivasspor','sivas','kirmizi beyaz','kirmizibeyaz'],
   'Bordo-Mavi':    ['trabzonspor','trabzon','ts','firtina','bordo mavi','bordomavi'],
   'Yeşil-Beyaz':   ['bursaspor','bursa','timsah','konyaspor','konya','yesil beyaz','yesilbeyaz'],
-  'Kırmızı-Siyah': ['eskisehirspor','eskisehir','es es','gencler','genclerbirligi','kirmizi siyah','kirmizisiyah'],
+  'Kırmızı-Siyah': ['eskisehirspor','eskisehir','gaziantep','es es','gencler','genclerbirligi','kirmizi siyah','kirmizisiyah'],
 };
 function sayimYap(metin){
   const ad = ADAYLAR.map(d => ({ d, rx: [...new Set([...(VARSAYILAN_ANAHTAR[d.ad] || []), ...(d.anahtar || []), katla(d.ad).replace('-', ' '), d.takim ? katla(d.takim) : null].filter(Boolean))]
-    .map(a => new RegExp('(^|[^a-z0-9])' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '[\\s-]*') + '([^a-z0-9]|$)')) }));
+    .map(a => { const g = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '[\\s-]*');   // uzun adlar bitişik yazımda da (BeşiktaşBeşiktaş), kısalar (gs, fb) tek kelime olarak
+      return new RegExp(a.length < 6 ? '(^|[^a-z0-9])' + g + '([^a-z0-9]|$)' : g); }) }));
   const sayim = new Map(ADAYLAR.map(d => [d.ad, 0])), oyVeren = new Set(), eslesmeyen = []; let yorum = 0, tekrar = 0;
   for(const ham of String(metin).split(/\r?\n/)){ const satir = ham.trim(); if(!satir) continue;
     const m = satir.match(/^@?([A-Za-z0-9._]{2,30})\s*[:\t,;]\s*(.+)$/); const kim = m ? m[1].toLowerCase() : null, yaz = katla(m ? m[2] : satir);
