@@ -1,54 +1,58 @@
 {
  "instagram": {
-  "renk": null,
+  "renk": {
+   "ad": "Siyah-Beyaz",
+   "ana": "#1A1A1A",
+   "ikinci": "#FFFFFF"
+  },
   "renkOylamasi": [
-   {
-    "ad": "Sarı-Kırmızı",
-    "takim": "Galatasaray",
-    "ana": "#A90432",
-    "ikinci": "#FDB912",
-    "oy": 0
-   },
-   {
-    "ad": "Sarı-Lacivert",
-    "takim": "Fenerbahçe",
-    "ana": "#0B2A6F",
-    "ikinci": "#FFED00",
-    "oy": 0
-   },
    {
     "ad": "Siyah-Beyaz",
     "takim": "Beşiktaş",
     "ana": "#1A1A1A",
     "ikinci": "#FFFFFF",
-    "oy": 0
+    "oy": 233
    },
    {
-    "ad": "Kırmızı-Beyaz",
-    "takim": "Antalyaspor / Samsunspor",
-    "ana": "#D6001C",
-    "ikinci": "#FFFFFF",
-    "oy": 0
-   },
-   {
-    "ad": "Bordo-Mavi",
-    "takim": "Trabzonspor",
-    "ana": "#7A1F3D",
-    "ikinci": "#5DB3E6",
-    "oy": 0
+    "ad": "Sarı-Kırmızı",
+    "takim": "Galatasaray",
+    "ana": "#A90432",
+    "ikinci": "#FDB912",
+    "oy": 76
    },
    {
     "ad": "Yeşil-Beyaz",
     "takim": "Bursaspor",
     "ana": "#0E7A3A",
     "ikinci": "#FFFFFF",
-    "oy": 0
+    "oy": 15
+   },
+   {
+    "ad": "Sarı-Lacivert",
+    "takim": "Fenerbahçe",
+    "ana": "#0B2A6F",
+    "ikinci": "#FFED00",
+    "oy": 12
+   },
+   {
+    "ad": "Bordo-Mavi",
+    "takim": "Trabzonspor",
+    "ana": "#7A1F3D",
+    "ikinci": "#5DB3E6",
+    "oy": 1
    },
    {
     "ad": "Kırmızı-Siyah",
     "takim": "Eskişehirspor",
     "ana": "#C8102E",
     "ikinci": "#111111",
+    "oy": 1
+   },
+   {
+    "ad": "Kırmızı-Beyaz",
+    "takim": "Antalyaspor / Samsunspor",
+    "ana": "#D6001C",
+    "ikinci": "#FFFFFF",
     "oy": 0
    }
   ],
@@ -57,8 +61,14 @@
   "takimAdi": null,
   "arma": null,
   "ilk11": [],
-  "siradaki": "RENKLER",
+  "siradaki": "STADIN ADI",
   "hedef": 5000,
-  "gecmis": []
+  "gecmis": [],
+  "renkSayim": {
+   "kural": "bütün yorumlar (tekrarlar dahil)",
+   "yorum": 364,
+   "kisi": 89,
+   "tarih": "2026-11-23"
+  }
  }
 }

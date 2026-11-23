@@ -1172,7 +1172,7 @@ const VARSAYILAN_ANAHTAR = {
   'Yeşil-Beyaz':   ['bursaspor','bursa','timsah','konyaspor','konya','yesil beyaz','yesilbeyaz'],
   'Kırmızı-Siyah': ['eskisehirspor','eskisehir','gaziantep','es es','gencler','genclerbirligi','kirmizi siyah','kirmizisiyah'],
 };
-function sayimYap(metin){
+function sayimYap(metin, hepsi = false){   // hepsi: her yorum ayrı oy (tekrarlar dahil)
   const ad = ADAYLAR.map(d => ({ d, rx: [...new Set([...(VARSAYILAN_ANAHTAR[d.ad] || []), ...(d.anahtar || []), katla(d.ad).replace('-', ' '), d.takim ? katla(d.takim) : null].filter(Boolean))]
     .map(a => { const g = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '[\\s-]*');   // uzun adlar bitişik yazımda da (BeşiktaşBeşiktaş), kısalar (gs, fb) tek kelime olarak
       return new RegExp(a.length < 6 ? '(^|[^a-z0-9])' + g + '([^a-z0-9]|$)' : g); }) }));
@@ -1181,7 +1181,7 @@ function sayimYap(metin){
     const m = satir.match(/^@?([A-Za-z0-9._]{2,30})\s*[:\t,;]\s*(.+)$/); const kim = m ? m[1].toLowerCase() : null, yaz = katla(m ? m[2] : satir);
     const bul = ad.find(a => a.rx.some(r => r.test(yaz))); yorum++;
     if(!bul){ if(eslesmeyen.length < 12) eslesmeyen.push(satir.slice(0, 60)); continue; }
-    if(kim){ if(oyVeren.has(kim)){ tekrar++; continue; } oyVeren.add(kim); }
+    if(kim){ if(oyVeren.has(kim) && !hepsi){ tekrar++; continue; } oyVeren.add(kim); }
     sayim.set(bul.d.ad, sayim.get(bul.d.ad) + 1); }
   return { sayim, yorum, tekrar, eslesmeyen, kisi: oyVeren.size };
 }
@@ -1223,9 +1223,10 @@ function yonetimCiz(){
     <h3>stad.json (siteye yükle, link parametresiz bu durumu gösterir)</h3><div class="kod">${json}</div>
     <div class="satir" style="margin-top:10px"><button class="btn kucuk" id="yKopya">Linki kopyala</button><button class="btn kucuk" id="yIndir">stad.json indir</button></div>
     <h3 style="margin-top:18px">📊 RENK SAYIMI</h3>
-    <p>Reel'in yorumlarını aşağıya yapıştır. Her satır bir yorum; <code>kullanici: yorum</code>, <code>kullanici,yorum</code> (CSV) ya da sekmeyle ayrılmış olabilir. Kullanıcı adı varsa <b>herkesin tek oyu</b> sayılır. Takım adı, kısaltma (GS, FB, BJK, TS…) ya da renk adı (sarı lacivert…) tanınır; aynı renkteki takımlar (ör. Göztepe → Sarı-Kırmızı) o rengin oyuna eklenir.</p>
+    <p>Reel'in yorumlarını aşağıya yapıştır. Her satır bir yorum; <code>kullanici: yorum</code>, <code>kullanici,yorum</code> (CSV) ya da sekmeyle ayrılmış olabilir. Kutucuk açıkken her yorum ayrı oy sayılır; kapatırsan kullanıcı adı olan herkesin tek oyu sayılır. Takım adı, kısaltma (GS, FB, BJK, TS…) ya da renk adı (sarı lacivert…) tanınır; aynı renkteki takımlar (ör. Göztepe → Sarı-Kırmızı) o rengin oyuna eklenir.</p>
     <textarea id="sMetin" style="width:100%;height:120px;border-radius:10px;border:0;padding:8px;font:13px ui-monospace,Menlo,monospace" placeholder="ali_1905: Galatasaray 💛❤️&#10;mert.fb07: fener&#10;ece_bjk: bjk"></textarea>
-    <div class="satir" style="margin:8px 0"><button class="btn kucuk" id="sSay">Say</button></div>
+    <div class="satir" style="margin:8px 0"><button class="btn kucuk" id="sSay">Say</button>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="sHepsi" checked> Her yorumu say (tekrarlar dahil; ilk oylamada kullanılan kural)</label></div>
     <div id="sSonuc"></div>`;
   $('yonetim').querySelectorAll('input[data-a]').forEach(c => c.onchange = () => { const id = c.dataset.a; if(c.checked){ ACIK.push(id); INSAAT = INSAAT.filter(x=>x!==id); } else ACIK = ACIK.filter(x=>x!==id); yapiKur(); });
   $('yonetim').querySelectorAll('input[data-i]').forEach(c => c.onchange = () => { const id = c.dataset.i; INSAAT = c.checked ? [...INSAAT, id] : INSAAT.filter(x=>x!==id); yapiKur(); });
@@ -1233,7 +1234,7 @@ function yonetimCiz(){
   $('yHepsi').onclick = () => { OTOMATIK = false; ACIK = [...AYAR.acilisPlani]; INSAAT = []; yapiKur(); };
   $('yHic').onclick = () => { OTOMATIK = false; ACIK = []; yapiKur(); };
   $('yDemoUyg').onclick = () => { const n = Math.max(0, +$('yDemo').value|0); TARAFTAR = DEMO ? demoIsimler(n) : taraftarHazirla(HAM).slice(0, n); ARAMA = TARAFTAR.map(u=>u.toLowerCase()); yapiKur(); };
-  $('sSay').onclick = () => sayimGoster(sayimYap($('sMetin').value));
+  $('sSay').onclick = () => sayimGoster(sayimYap($('sMetin').value, $('sHepsi').checked));
   $('yKopya').onclick = () => { navigator.clipboard?.writeText(u.toString()); toast('🔗 Link kopyalandı'); };
   $('yIndir').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ otomatik:OTOMATIK, acik:ACIK, insaat:INSAAT }, null, 1)], { type:'application/json' })); a.download = 'stad.json'; a.click(); };
   try{ history.replaceState(null, '', u); }catch(e){}
