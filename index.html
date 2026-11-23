@@ -242,7 +242,7 @@ const MARKA_RENK = { ...AYAR.renk };
 const hexTemiz = h => (h && /^#?[0-9a-f]{6}$/i.test(String(h).trim())) ? '#' + String(h).trim().replace('#','') : null;
 const ADAYLAR = (KARAR.renkOylamasi || []).filter(a => a && hexTemiz(a.ana))
   .map(a => ({ ...a, ana:hexTemiz(a.ana), ikinci:hexTemiz(a.ikinci) || '#ffffff', oy:Math.max(0, +a.oy || 0) })).sort((a,b) => b.oy - a.oy);
-const OY_TOPLAM = ADAYLAR.reduce((t,a) => t + a.oy, 0);
+let OY_TOPLAM = ADAYLAR.reduce((t,a) => t + a.oy, 0);
 const RENK_SECILDI = !!hexTemiz(KARAR.renk?.ana);
 const OYLAMA = !RENK_SECILDI && (ADAYLAR.length > 0 || /renk/i.test(KARAR.siradaki || ''));
 const trK = s => String(s || '').toLocaleLowerCase('tr-TR').trim();
@@ -486,6 +486,37 @@ const ekranTex = new THREE.CanvasTexture(ekranCv); ekranTex.colorSpace = THREE.S
   const cer = new THREE.Mesh(new THREE.BoxGeometry(48.5, 20.4, 1), M('#111318')); cer.position.copy(ekran.position).add(new THREE.Vector3(K.nx*.6, 0, K.nz*.6)); cer.rotation.y = K.ry; scene.add(cer);
   for(const s of [-16, 16]){ const ay = new THREE.Mesh(new THREE.BoxGeometry(1.3, UST(2)+8, 1.3), M('#2a2f3a')); ay.position.set(K.mx + K.ux*s + K.nx*1.2, (UST(2)+8)/2, K.mz + K.uz*s + K.nz*1.2); scene.add(ay); } }
 let ekranKayma = 0;
+// Dev isim tabelası: kuzey tribünün çatısında, hem içe (kuş bakışından görünür) hem dışa bakar
+const KUFUR = ['amk','aq','orospu','pic','piç','sik','yarra','göt','got','oç','anani','ananı','pezevenk','kahpe','amcık','amcik','yavşak','yavsak','şerefsiz','serefsiz','ibne','gavat'];
+function isimTemiz(v){ const t = String(v || '').replace(/\s+/g, ' ').trim().slice(0, 26);
+  if(!t || !/^[\p{L}\p{N} .'&-]+$/u.test(t)) return null; const k = trK(t).replace(/[^a-zçğıöşü0-9]/g, '');
+  return KUFUR.some(w => k.includes(w)) ? null : t; }
+let ISIM_ONIZLEME = isimTemiz(url.get('isim'));
+const tabelaCv = document.createElement('canvas'); tabelaCv.width = 2048; tabelaCv.height = 340;
+const tabelaTex = new THREE.CanvasTexture(tabelaCv); tabelaTex.colorSpace = THREE.SRGBColorSpace; tabelaTex.anisotropy = 8;
+function tabelaCiz(){
+  const x = tabelaCv.getContext('2d'), W = tabelaCv.width, H = tabelaCv.height, ad = ISIM_ONIZLEME || KARAR.stadAdi;
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#16151a'); g.addColorStop(1,'#050506'); x.fillStyle = g; x.fillRect(0,0,W,H);
+  x.strokeStyle = '#c9a24a'; x.lineWidth = 10; x.strokeRect(14,14,W-28,H-28);
+  for(let i=40; i<W-30; i+=44){ for(const yy of [30, H-30]){ x.fillStyle = 'rgba(255,226,150,.95)'; x.beginPath(); x.arc(i, yy, 6, 0, 7); x.fill(); } }   // ampuller
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const altin = x.createLinearGradient(0, 70, 0, H-70); altin.addColorStop(0,'#fff3c4'); altin.addColorStop(.45,'#e8c766'); altin.addColorStop(1,'#a8822e');
+  if(ad){ let fs = 230; const t = ad.toLocaleUpperCase('tr-TR'); x.font = `${fs}px Anton, Impact, sans-serif`; while(x.measureText(t).width > W - 160 && fs > 80){ fs -= 8; x.font = `${fs}px Anton, Impact, sans-serif`; }
+    x.shadowColor = 'rgba(232,199,102,.6)'; x.shadowBlur = 30; x.fillStyle = altin; x.fillText(t, W/2, H/2 + 8); x.shadowBlur = 0;
+    if(ISIM_ONIZLEME && !KARAR.stadAdi){ x.font = '900 34px Inter, system-ui'; x.fillStyle = '#F2C14E'; x.fillText('ÖNERİ · ÖNİZLEME', W/2, 58); } }
+  else { x.font = '120px Anton, Impact, sans-serif'; x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('BU STADIN ADI YOK', W/2, H/2 - 52);
+    x.font = '150px Anton, Impact, sans-serif'; x.shadowColor = 'rgba(232,199,102,.6)'; x.shadowBlur = 26; x.fillStyle = altin; x.fillText('ADINI SEN KOY', W/2, H/2 + 72); x.shadowBlur = 0; }
+  tabelaTex.needsUpdate = true;
+}
+tabelaCiz(); document.fonts?.ready.then(tabelaCiz);
+const TABELA = (() => { const K = kenar(4, DIS(2) - 3), Wt = 96, Ht = Wt*340/2048, y = UST(2) + 4 + Ht/2, g = new THREE.Group();
+  const on = new THREE.Mesh(new THREE.PlaneGeometry(Wt, Ht), new THREE.MeshBasicMaterial({ map:tabelaTex })); on.rotation.y = Math.atan2(-K.nx, -K.nz);
+  const arka = on.clone(); arka.rotation.y = Math.atan2(K.nx, K.nz); arka.position.set(K.nx*.3, 0, K.nz*.3);
+  const cerceve = new THREE.Mesh(new THREE.BoxGeometry(Wt + 1.2, Ht + 1.2, .25), M('#0d0c0f')); cerceve.rotation.y = K.ry; cerceve.position.set(K.nx*.15, 0, K.nz*.15);
+  g.add(cerceve, on, arka); g.position.set(K.mx, y, K.mz); scene.add(g);
+  for(const s of [-Wt/3, Wt/3]){ const d = new THREE.Mesh(new THREE.BoxGeometry(1, y, 1), M('#2a2f3a')); d.position.set(K.mx + K.ux*s + K.nx*.6, y/2, K.mz + K.uz*s + K.nz*.6); scene.add(d); }
+  return { K, y, Wt }; })();
+function tabelayaUc(sure = 1.6){ const K = TABELA.K; uc(new THREE.Vector3(K.mx - K.nx*175 + 30, TABELA.y + 40, K.mz - K.nz*175), new THREE.Vector3(K.mx, TABELA.y - 6, K.mz), sure); }
 function ekranCiz(){
   const x = ekranCv.getContext('2d'), W = 1024, H = 400;
   x.fillStyle = '#07080b'; x.fillRect(0,0,W,H); x.fillStyle = AYAR.renk.ana; x.fillRect(0,0,W,86);
@@ -1001,7 +1032,7 @@ function arayuzGuncelle(){
 function kararlarCiz(){
   const ok = (ik, baslik, deger) => `<div class="karar"><div class="ik">${ik}</div><div class="m">${baslik}<b>${deger ? deger.replace(/</g,'&lt;') : '— henüz oylanmadı'}</b></div><div>${deger ? '✅' : '⏳'}</div></div>`;
   const ilk = (KARAR.ilk11 || []).filter(x => x).length;
-  let h = renkBolumu() + ok('🏟️', 'Stadyumun adı', KARAR.stadAdi) + ok('🛡️', 'Takımın adı', KARAR.takimAdi) + ok('🎨', 'Arma', KARAR.arma ? 'Seçildi (sahanın ortasında)' : null)
+  let h = renkBolumu() + isimBolumu() + ok('🏟️', 'Stadyumun adı', KARAR.stadAdi) + ok('🛡️', 'Takımın adı', KARAR.takimAdi) + ok('🎨', 'Arma', KARAR.arma ? 'Seçildi (sahanın ortasında)' : null)
     + ok('⚽', 'İlk 11', ilk ? `${ilk}/11 oyuncu belli` : null);
   for(const g of KARAR.gecmis || []) h += ok(g.ikon || '✔️', g.baslik, g.deger);
   if(KARAR.siradaki) h += `<div class="karar siradaki"><div class="ik">🗳️</div><div class="m">Sıradaki karar<b>${String(KARAR.siradaki).replace(/</g,'&lt;')}</b></div></div>
@@ -1071,6 +1102,41 @@ function renkTuru(ac){
 function renkTuruAdim(simdi){
   if(simdi - TUR.z < 3800) return; TUR.z = simdi; TUR.i = (TUR.i + 1) % Math.min(ADAYLAR.length, 6); renkUygula(ADAYLAR[TUR.i]);
 }
+function isimBolumu(){
+  if(KARAR.stadAdi) return '';
+  const aktif = /ad/i.test(KARAR.siradaki || '') && !/renk/i.test(KARAR.siradaki || '');
+  return `<h3 style="margin-top:4px">🏟️ ${aktif ? 'SIRADAKİ KARAR: STADIN ADI' : 'SIRADA: STADIN ADI · şimdiden dene'}</h3>
+    <p>Aklındaki ismi yaz, <b>dev tabelada</b> nasıl durduğunu gör. Beğendiysen Story'de paylaş ve reel'e yorum olarak yaz: ${aktif ? '<b>en çok beğeni alan yorum stadın adı olur.</b>' : 'oylama renk kararından sonra başlıyor.'}</p>
+    <div class="satir" style="margin:8px 0 14px"><input id="isimQ" maxlength="26" placeholder="ör. Kartal Yuvası Arena" value="${esc(ISIM_ONIZLEME || '')}" style="flex:1;min-width:0;height:40px;border-radius:10px;border:0;padding:0 12px;font-weight:700">
+      <button class="btn kucuk" data-isim>Tabelaya yaz</button><button class="btn kucuk ikincil" data-isimstory>📲 Story</button></div>`;
+}
+function isimOnizle(v, story=false){
+  const t = isimTemiz(v); if(!t){ toast('Bu isim kullanılamıyor.<br><small>Harf, rakam ve boşluk; en fazla 26 karakter.</small>'); return; }
+  ISIM_ONIZLEME = t; tabelaCiz(); $('pKarar').style.display = 'none'; secimKapat(); tabelayaUc();
+  try{ const u = new URL(location.href); u.searchParams.set('isim', t); history.replaceState(null, '', u); }catch(e){}
+  if(story) setTimeout(() => isimStory(t), 1800); else toast('🏟️ Tabelaya yazıldı: <b>' + esc(t) + '</b><br><small>Beğendiysen reel\'e yorum olarak yaz!</small>');
+}
+async function isimStory(t){
+  toast('📸 Görsel hazırlanıyor…'); const K = TABELA.K, eskiP = cam.position.clone(), eskiT = ctl.target.clone();
+  cam.position.set(K.mx - K.nx*175 + 30, TABELA.y + 40, K.mz - K.nz*175); ctl.target.set(K.mx, TABELA.y - 6, K.mz); cam.lookAt(ctl.target); renderer.render(scene, cam);
+  const W = 1080, H = 1920, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0b0b0e'); g.addColorStop(1,'#1a1610'); x.fillStyle = g; x.fillRect(0,0,W,H);
+  const src = renderer.domElement, sw = src.width, sh = src.height, hO = 1000/1100, kO = sw/sh; let cw = sw, ch = sh; if(kO > hO) cw = sh*hO; else ch = sw/hO;
+  x.save(); x.beginPath(); x.roundRect(40, 380, 1000, 1100, 36); x.clip(); x.drawImage(src, (sw-cw)/2, (sh-ch)/2, cw, ch, 40, 380, 1000, 1100); x.restore();
+  cam.position.copy(eskiP); ctl.target.copy(eskiT);
+  x.strokeStyle = '#c9a24a'; x.lineWidth = 8; x.beginPath(); x.roundRect(40, 380, 1000, 1100, 36); x.stroke();
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.font = '84px Anton, Impact, sans-serif'; x.fillText('BU STADIN ADI', W/2, 150);
+  let fs = 120; const T = t.toLocaleUpperCase('tr-TR'); x.font = `${fs}px Anton, Impact, sans-serif`; while(x.measureText(T).width > 980 && fs > 50){ fs -= 6; x.font = `${fs}px Anton, Impact, sans-serif`; }
+  const al = x.createLinearGradient(0, 220, 0, 320); al.addColorStop(0,'#fff3c4'); al.addColorStop(1,'#c99a35'); x.fillStyle = al; x.fillText(T, W/2, 265);
+  x.fillStyle = '#F2C14E'; x.beginPath(); x.roundRect(W/2-150, 1530, 300, 80, 16); x.fill(); x.fillStyle = '#16120a'; x.font = '60px Anton, Impact, sans-serif'; x.fillText('OLSUN!', W/2, 1572);
+  x.fillStyle = '#fff'; x.font = '900 40px Inter, system-ui'; x.fillText('Yorumuma beğeni at 👉 @' + AYAR.hesap, W/2, 1690);
+  x.fillStyle = 'rgba(255,255,255,.7)'; x.font = '800 32px Inter, system-ui'; x.fillText('Kendi ismini dene: ' + location.host, W/2, 1760);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png')), dosya = new File([blob], 'stadin-adi.png', { type:'image/png' });
+  window.__sonIsimStory = cv;
+  try{ if(navigator.canShare && navigator.canShare({ files:[dosya] })){ await navigator.share({ files:[dosya], text:AYAR.siteLink + '?isim=' + encodeURIComponent(t) }); return; } }catch(e){ if(e?.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'stadin-adi.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('⬇️ Görsel indirildi, Story\'ne ekle ve @' + AYAR.hesap + ' etiketle');
+}
 function renkBolumu(){
   if(RENK_SECILDI){ const d = AKTIF_RENK && !ADAYLAR.includes(AKTIF_RENK) ? AKTIF_RENK : KARAR.renk;
     return `<div class="karar"><div class="ik"><span class="sw" style="display:inline-block;width:26px;height:26px;border-radius:50%;${swatch({ ana:hexTemiz(d.ana), ikinci:hexTemiz(d.ikinci) || '#fff' })}"></span></div><div class="m">Statın renkleri<b>${esc(d.ad || 'Seçildi')}</b></div><div>✅</div></div>`; }
@@ -1085,6 +1151,8 @@ function renkBolumu(){
     <div class="satir" style="margin:8px 0 14px">${ADAYLAR.length ? '<button class="btn kucuk" data-tur>▶️ Renk turu</button>' : ''}<button class="btn kucuk ikincil" data-renksiz>↺ Boyanmamış hal</button></div>`;
 }
 $('kararlar').addEventListener('click', e => {
+  if(e.target.closest('[data-isim]')){ isimOnizle($('isimQ').value); return; }
+  if(e.target.closest('[data-isimstory]')){ isimOnizle($('isimQ').value, true); return; }
   const o = e.target.closest('[data-onizle]'); if(o){ if(TUR.acik) renkTuru(false); renkUygula(ADAYLAR[+o.dataset.onizle]); $('pKarar').style.display = 'none'; kusBakisi(); return; }
   if(e.target.closest('[data-tur]')){ $('pKarar').style.display = 'none'; renkTuru(true); return; }
   if(e.target.closest('[data-renksiz]')){ if(TUR.acik) renkTuru(false); renkUygula(null); $('pKarar').style.display = 'none'; }
@@ -1093,6 +1161,50 @@ $('kararlar').addEventListener('click', e => {
 /* ================== YÖNETİM PANELİ (?yonetim=1) ================== */
 function durumUrl(){ const u = new URL(location.href); ['acik','insaat','otomatik'].forEach(k => u.searchParams.delete(k));
   if(OTOMATIK) u.searchParams.set('otomatik','1'); else { u.searchParams.set('acik', ACIK.join(',')); u.searchParams.set('insaat', INSAAT.join(',')); } return u; }
+/* ---- Renk sayımı ---- */
+const katla = s => trK(s).replace(/[çğıöşü]/g, c => ({ç:'c',ğ:'g',ı:'i',ö:'o',ş:'s',ü:'u'}[c]));
+const VARSAYILAN_ANAHTAR = {
+  'Sarı-Kırmızı':  ['galatasaray','gs','cimbom','cim bom','ultraslan','aslan','goztepe','kayserispor','kayseri','sari kirmizi','sarikirmizi'],
+  'Sarı-Lacivert': ['fenerbahce','fener','fb','kanarya','ankaragucu','sari lacivert','sarilacivert'],
+  'Siyah-Beyaz':   ['besiktas','bjk','kartal','carsi','altay','siyah beyaz','siyahbeyaz'],
+  'Kırmızı-Beyaz': ['antalyaspor','antalya','samsunspor','samsun','sivasspor','sivas','kirmizi beyaz','kirmizibeyaz'],
+  'Bordo-Mavi':    ['trabzonspor','trabzon','ts','firtina','bordo mavi','bordomavi'],
+  'Yeşil-Beyaz':   ['bursaspor','bursa','timsah','konyaspor','konya','yesil beyaz','yesilbeyaz'],
+  'Kırmızı-Siyah': ['eskisehirspor','eskisehir','es es','gencler','genclerbirligi','kirmizi siyah','kirmizisiyah'],
+};
+function sayimYap(metin){
+  const ad = ADAYLAR.map(d => ({ d, rx: [...new Set([...(VARSAYILAN_ANAHTAR[d.ad] || []), ...(d.anahtar || []), katla(d.ad).replace('-', ' '), d.takim ? katla(d.takim) : null].filter(Boolean))]
+    .map(a => new RegExp('(^|[^a-z0-9])' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '[\\s-]*') + '([^a-z0-9]|$)')) }));
+  const sayim = new Map(ADAYLAR.map(d => [d.ad, 0])), oyVeren = new Set(), eslesmeyen = []; let yorum = 0, tekrar = 0;
+  for(const ham of String(metin).split(/\r?\n/)){ const satir = ham.trim(); if(!satir) continue;
+    const m = satir.match(/^@?([A-Za-z0-9._]{2,30})\s*[:\t,;]\s*(.+)$/); const kim = m ? m[1].toLowerCase() : null, yaz = katla(m ? m[2] : satir);
+    const bul = ad.find(a => a.rx.some(r => r.test(yaz))); yorum++;
+    if(!bul){ if(eslesmeyen.length < 12) eslesmeyen.push(satir.slice(0, 60)); continue; }
+    if(kim){ if(oyVeren.has(kim)){ tekrar++; continue; } oyVeren.add(kim); }
+    sayim.set(bul.d.ad, sayim.get(bul.d.ad) + 1); }
+  return { sayim, yorum, tekrar, eslesmeyen, kisi: oyVeren.size };
+}
+let SON_SAYIM = null;
+function sayimGoster(r){
+  SON_SAYIM = r; const top = [...r.sayim.values()].reduce((a,b) => a+b, 0), sira = [...r.sayim.entries()].sort((a,b) => b[1]-a[1]);
+  $('sSonuc').innerHTML = `<table><tr><th>Renk</th><th>Oy</th><th>%</th></tr>${sira.map(([a,n]) => `<tr><td>${esc(a)}</td><td><b>${fmt(n)}</b></td><td>${top ? Math.round(n/top*100) : 0}</td></tr>`).join('')}</table>
+    <p>${fmt(r.yorum)} satır · <b>${fmt(top)} geçerli oy</b>${r.kisi ? ` · ${fmt(r.kisi)} kişi` : ''}${r.tekrar ? ` · ${fmt(r.tekrar)} tekrar oy sayılmadı` : ''}</p>
+    ${r.eslesmeyen.length ? `<p><small>Tanınmayan örnekler: ${r.eslesmeyen.map(esc).join(' · ')}</small></p>` : ''}
+    <div class="satir"><button class="btn kucuk ikincil" id="sUygula">Oyları sitede göster</button><button class="btn kucuk ikincil" id="sJson">kararlar.json indir (oylar)</button>
+    ${top && sira[0][1] > (sira[1]?.[1] ?? -1) ? `<button class="btn kucuk" id="sKazanan">🏆 ${esc(sira[0][0])} kazandı: ilan et</button>` : top ? `<b style="color:var(--vurgu)">⚖️ Berabere: ${esc(sira[0][0])} = ${esc(sira[1][0])}. Kazanan ilan edilemez; oylamayı uzat ya da iki renkle final yap.</b>` : ''}</div>`;
+  $('sUygula').onclick = () => { oylariIsle(); toast('Oylar sitede güncellendi'); };
+  $('sJson').onclick = () => kararIndir(false);
+  if($('sKazanan')) $('sKazanan').onclick = () => { if(confirm(sira[0][0] + ' renkleri kazanan olarak ilan edilsin mi? Sıradaki karar STADIN ADI olacak.')) kararIndir(true); };
+}
+function oylariIsle(){ if(!SON_SAYIM) return; ADAYLAR.forEach(d => d.oy = SON_SAYIM.sayim.get(d.ad) || 0); ADAYLAR.sort((a,b) => b.oy - a.oy);
+  OY_TOPLAM = ADAYLAR.reduce((t,a) => t + a.oy, 0); bantGuncelle(); renkTuret(); renkleriBoya(); }
+function kararIndir(kazanan){
+  oylariIsle(); const k = JSON.parse(JSON.stringify(vKar || { instagram:{} })), h = k.instagram || k;
+  h.renkOylamasi = ADAYLAR.map(({ ad, takim, ana, ikinci, oy, anahtar }) => ({ ad, takim, ana, ikinci, oy, ...(anahtar ? { anahtar } : {}) }));
+  if(kazanan){ const d = ADAYLAR[0]; h.renk = { ad:d.ad, ana:d.ana, ikinci:d.ikinci }; h.siradaki = 'STADIN ADI'; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(k, null, 1)], { type:'application/json' })); a.download = 'kararlar.json'; a.click();
+  toast(kazanan ? '🏆 kararlar.json indirildi. Siteye yükleyince stat ' + esc(ADAYLAR[0].ad) + ' renklerine boyanır.' : 'kararlar.json indirildi');
+}
 function yonetimCiz(){
   const satirlar = BOLUMLER.map(b => { const ai = ACIK.indexOf(b.id);
     return `<tr><td><b>${b.id}</b></td><td>${b.kisa}</td><td>${fmt(b.dolum.length)}</td>
@@ -1108,13 +1220,19 @@ function yonetimCiz(){
     <p style="margin-top:10px">Açık kapasite: <b>${fmt(acikKapasite())}</b> · Taraftar: <b>${fmt(TARAFTAR.length)}</b>${TASAN>0?` · <b style="color:var(--vurgu)">${fmt(TASAN)} kapıda</b>`:''}</p>
     <h3>PAYLAŞILACAK LİNK (bu durumu gösterir)</h3><div class="kod" id="yUrl">${u.toString().replace(/&/g,'&amp;')}</div>
     <h3>stad.json (siteye yükle, link parametresiz bu durumu gösterir)</h3><div class="kod">${json}</div>
-    <div class="satir" style="margin-top:10px"><button class="btn kucuk" id="yKopya">Linki kopyala</button><button class="btn kucuk" id="yIndir">stad.json indir</button></div>`;
+    <div class="satir" style="margin-top:10px"><button class="btn kucuk" id="yKopya">Linki kopyala</button><button class="btn kucuk" id="yIndir">stad.json indir</button></div>
+    <h3 style="margin-top:18px">📊 RENK SAYIMI</h3>
+    <p>Reel'in yorumlarını aşağıya yapıştır. Her satır bir yorum; <code>kullanici: yorum</code>, <code>kullanici,yorum</code> (CSV) ya da sekmeyle ayrılmış olabilir. Kullanıcı adı varsa <b>herkesin tek oyu</b> sayılır. Takım adı, kısaltma (GS, FB, BJK, TS…) ya da renk adı (sarı lacivert…) tanınır; aynı renkteki takımlar (ör. Göztepe → Sarı-Kırmızı) o rengin oyuna eklenir.</p>
+    <textarea id="sMetin" style="width:100%;height:120px;border-radius:10px;border:0;padding:8px;font:13px ui-monospace,Menlo,monospace" placeholder="ali_1905: Galatasaray 💛❤️&#10;mert.fb07: fener&#10;ece_bjk: bjk"></textarea>
+    <div class="satir" style="margin:8px 0"><button class="btn kucuk" id="sSay">Say</button></div>
+    <div id="sSonuc"></div>`;
   $('yonetim').querySelectorAll('input[data-a]').forEach(c => c.onchange = () => { const id = c.dataset.a; if(c.checked){ ACIK.push(id); INSAAT = INSAAT.filter(x=>x!==id); } else ACIK = ACIK.filter(x=>x!==id); yapiKur(); });
   $('yonetim').querySelectorAll('input[data-i]').forEach(c => c.onchange = () => { const id = c.dataset.i; INSAAT = c.checked ? [...INSAAT, id] : INSAAT.filter(x=>x!==id); yapiKur(); });
   $('yOto').onchange = e => { OTOMATIK = e.target.checked; yapiKur(); };
   $('yHepsi').onclick = () => { OTOMATIK = false; ACIK = [...AYAR.acilisPlani]; INSAAT = []; yapiKur(); };
   $('yHic').onclick = () => { OTOMATIK = false; ACIK = []; yapiKur(); };
   $('yDemoUyg').onclick = () => { const n = Math.max(0, +$('yDemo').value|0); TARAFTAR = DEMO ? demoIsimler(n) : taraftarHazirla(HAM).slice(0, n); ARAMA = TARAFTAR.map(u=>u.toLowerCase()); yapiKur(); };
+  $('sSay').onclick = () => sayimGoster(sayimYap($('sMetin').value));
   $('yKopya').onclick = () => { navigator.clipboard?.writeText(u.toString()); toast('🔗 Link kopyalandı'); };
   $('yIndir').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ otomatik:OTOMATIK, acik:ACIK, insaat:INSAAT }, null, 1)], { type:'application/json' })); a.download = 'stad.json'; a.click(); };
   try{ history.replaceState(null, '', u); }catch(e){}
