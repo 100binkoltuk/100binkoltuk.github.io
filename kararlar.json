@@ -4,7 +4,11 @@
    "ad": "Siyah-Beyaz",
    "ana": "#1A1A1A",
    "ikinci": "#FFFFFF",
-   "desen": "dikey"
+   "desen": "yazi",
+   "yazi": {
+    "ust": "İNÖNÜ",
+    "alt": "STADYUMU"
+   }
   },
   "renkOylamasi": [
    {
@@ -58,11 +62,11 @@
    }
   ],
   "locaHakki": 1000,
-  "stadAdi": null,
+  "stadAdi": "İnönü Stadyumu",
   "takimAdi": null,
   "arma": null,
   "ilk11": [],
-  "siradaki": "STADIN ADI",
+  "siradaki": "ARMA + TAKIM ADI",
   "hedef": 5000,
   "gecmis": [],
   "renkSayim": {
@@ -70,6 +74,37 @@
    "yorum": 364,
    "kisi": 89,
    "tarih": "2026-11-23"
+  },
+  "isimBabasi": {
+   "kullanici": "omercoral27",
+   "begeni": 29
+  },
+  "isimSayim": {
+   "kural": "en çok beğeni alan yorum",
+   "yorum": 104,
+   "tarih": "2026-11-24",
+   "ilk": [
+    [
+     "İnönü Stadyumu",
+     29,
+     "omercoral27"
+    ],
+    [
+     "İnönü Stadyumu",
+     8,
+     "emiryektadogruer"
+    ],
+    [
+     "İnönü Stadyum",
+     5,
+     "halit70609"
+    ]
+   ]
+  },
+  "armaKural": {
+   "kural": "en çok yorum alan takım adı + arma",
+   "haric": "Türkiye liglerindeki takımların adları ve maskotları sayılmaz",
+   "ornek": "Boğa - Kara Boğa FC"
   }
  }
 }
