@@ -6,8 +6,9 @@
    "ikinci": "#FFFFFF",
    "desen": "yazi",
    "yazi": {
-    "ust": "İNÖNÜ",
-    "alt": "STADYUMU"
+    "ust": null,
+    "ustAmblem": true,
+    "alt": "KARTALLAR FC"
    }
   },
   "renkOylamasi": [
@@ -63,10 +64,10 @@
   ],
   "locaHakki": 1000,
   "stadAdi": "İnönü Stadyumu",
-  "takimAdi": null,
-  "arma": null,
+  "takimAdi": "Kartallar FC",
+  "arma": "amblem",
   "ilk11": [],
-  "siradaki": "ARMA + TAKIM ADI",
+  "siradaki": "İLK 11 + TEKNİK DİREKTÖR",
   "hedef": 5000,
   "gecmis": [],
   "renkSayim": {
@@ -101,10 +102,28 @@
     ]
    ]
   },
-  "armaKural": {
+  "armaSayim": {
    "kural": "en çok yorum alan takım adı + arma",
-   "haric": "Türkiye liglerindeki takımların adları ve maskotları sayılmaz",
-   "ornek": "Boğa - Kara Boğa FC"
-  }
+   "yorum": 85,
+   "kazanan": "Kartal - Kartallar FC",
+   "kartal": 20,
+   "tarih": "2026-11-25"
+  },
+  "kadroKural": {
+   "ornek": "Santrafor",
+   "mevkiler": [
+    "Kaleci",
+    "Sol bek",
+    "Stoper",
+    "Sağ bek",
+    "Orta saha",
+    "Sol kanat",
+    "Santrafor",
+    "Sağ kanat",
+    "Teknik direktör"
+   ],
+   "secim": "Sistem her mevki için o mevkiyi yazanlar arasından kurayla seçer; teknik direktör de aynı şekilde."
+  },
+  "teknikDirektor": null
  }
 }
