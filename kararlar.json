@@ -66,8 +66,20 @@
   "stadAdi": "İnönü Stadyumu",
   "takimAdi": "Kartallar FC",
   "arma": "amblem",
-  "ilk11": [],
-  "siradaki": "İLK 11 + TEKNİK DİREKTÖR",
+  "ilk11": [
+   "huseyin.karahan.7146#1",
+   "ms_aktas_#3",
+   "cpmkaan06#4",
+   "hatice_er_oglu#5",
+   "granivod003#2",
+   "salih.akdasss#6",
+   "simonmmb11#8",
+   "selo.ozdmr#10",
+   "altayegeucak#11",
+   "ahmet_mahmut_aksu#9",
+   "tttahaa__#7"
+  ],
+  "siradaki": "PENALTI MI, DEVAM MI?",
   "hedef": 5000,
   "gecmis": [],
   "renkSayim": {
@@ -109,21 +121,61 @@
    "kartal": 20,
    "tarih": "2026-11-25"
   },
-  "kadroKural": {
-   "ornek": "Santrafor",
-   "mevkiler": [
-    "Kaleci",
-    "Sol bek",
-    "Stoper",
-    "Sağ bek",
-    "Orta saha",
-    "Sol kanat",
-    "Santrafor",
-    "Sağ kanat",
-    "Teknik direktör"
-   ],
-   "secim": "Sistem her mevki için o mevkiyi yazanlar arasından kurayla seçer; teknik direktör de aynı şekilde."
+  "teknikDirektor": "aliixozturkxbjk08",
+  "kuraGun4": {
+   "kural": "her mevki için o mevkiyi yazanlar arasından kura",
+   "tohum": 20261126,
+   "yorum": 135,
+   "kisi": 44,
+   "tarih": "2026-11-26"
   },
-  "teknikDirektor": null
+  "lig": {
+   "ad": "100K Ligi",
+   "takimlar": [
+    "Kartallar FC",
+    "Gri Kurtlar FC",
+    "Kara Boğa FC",
+    "Dağ Ayıları FC",
+    "Kızıl Tilkiler SK",
+    "Fırtına Şahinleri",
+    "Demir Kaplanlar",
+    "Deniz Atları SK"
+   ],
+   "maclar": [
+    {
+     "hafta": 1,
+     "ev": "Kartallar FC",
+     "dep": "Gri Kurtlar FC",
+     "skor": null,
+     "durum": "90+ penaltı kararı yorumlarda",
+     "olaylar": [
+      {
+       "dk": 23,
+       "tip": "gol",
+       "takim": "Kartallar FC",
+       "oyuncu": "ahmet_mahmut_aksu"
+      },
+      {
+       "dk": 67,
+       "tip": "gol",
+       "takim": "Gri Kurtlar FC"
+      },
+      {
+       "dk": 90,
+       "tip": "penaltı?",
+       "oyuncu": "altayegeucak"
+      }
+     ]
+    }
+   ]
+  },
+  "penaltiKural": {
+   "secenek": [
+    "PENALTI",
+    "DEVAM"
+   ],
+   "kural": "Yorumlarda çoğunluk kazanır",
+   "not": "PENALTI çıkarsa atışı bir sonraki reel’de görürsün"
+  }
  }
 }
